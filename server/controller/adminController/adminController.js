@@ -3,6 +3,18 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // Admin Signup
+/**
+ * Handles admin signup by validating input, checking for existing admin by email,
+ * hashing the password, and inserting a new admin record into the database.
+ * Responds with appropriate status and message based on the outcome.
+ *
+ * @async
+ * @function adminSignUp
+ * @param {import('express').Request} req - Express request object containing admin details in req.body
+ * @param {import('express').Response} res - Express response object used to send the response
+ * @returns {Promise<void>} Sends a JSON response with status and message or admin data
+ */
+
 const adminSignUp = async (req, res) => {
   const { name, email, phone, password, role } = req.body;
 
@@ -44,6 +56,19 @@ const adminSignUp = async (req, res) => {
     res.status(500).json({ message: 'Unexpected server error', error: err.message });
   }
 };
+
+
+/**
+ * Handles admin login by validating credentials, checking for admin existence,
+ * verifying password, and generating a JWT token upon successful authentication.
+ * Responds with appropriate status and message based on the outcome.
+ *
+ * @async
+ * @function adminLogin
+ * @param {import('express').Request} req - Express request object containing login credentials in req.body
+ * @param {import('express').Response} res - Express response object used to send the response
+ * @returns {Promise<void>} Sends a JSON response with status, token, and admin data
+ */
 
 
 const adminLogin = async (req, res) => {
@@ -91,6 +116,18 @@ const adminLogin = async (req, res) => {
   }
 };
 
+
+/**
+ * Retrieves admin data for the authenticated admin.
+ * Ensures that the requested admin ID matches the logged-in admin's ID for authorization.
+ * Responds with the admin's data or an error message.
+ *
+ * @async
+ * @function getAdminData
+ * @param {import('express').Request} req - Express request object containing params and user info
+ * @param {import('express').Response} res - Express response object used to send the response
+ * @returns {Promise<void>} Sends a JSON response with admin data or error message
+ */
 
 const getAdminData = async (req, res) => {
   const requestedId = parseInt(req.params.id);
