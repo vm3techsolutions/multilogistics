@@ -6,6 +6,7 @@ const verifyToken = require('../middleware/auth');
 const adminController = require('../controller/adminController/adminController');
 const {createAgent} = require('../controller/agentController/agentController');
 const { createCustomer } = require('../controller/customerController/customerController');
+const { createCourierExport } = require('../controller/courierExportController/courierExportController');
 
 // Admin Signup Route
 router.post('/signup', adminController.adminSignUp);
@@ -20,5 +21,8 @@ router.post('/agents', verifyToken, createAgent); // Create Agent
 
 // Customer Routes
 router.post('/customers', verifyToken, createCustomer);
+
+// Courier Exports Route
+router.post('/courier-exports', verifyToken, createCourierExport);
 
 module.exports = router;
