@@ -24,13 +24,24 @@ const AddAgentForm = ({ onClose }) => {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    dispatch(createAgent(formData)).then((res) => {
-      if (res.meta.requestStatus === "fulfilled") {
-        onClose?.();
-      }
-    });
-  };
+  e.preventDefault();
+  dispatch(createAgent(formData)).then((res) => {
+    if (res.meta.requestStatus === "fulfilled") {
+      // ✅ Reset form fields
+      setFormData({
+        name: "",
+        email: "",
+        contact_person_name: "",
+        phone: "",
+        country: "",
+        type: "import", // reset default
+      });
+
+      onClose?.(); // close modal if provided
+    }
+  });
+};
+
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md w-full max-w-lg">

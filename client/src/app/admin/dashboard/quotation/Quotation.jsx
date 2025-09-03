@@ -34,7 +34,8 @@ const Quotation = () => {
     origin: "",
     destination: "",
     actual_weight: "",
-    created_by: "",
+    created_by: user?.id || "",
+    created_by_name: user?.name || "Admin",
     packages: [
       { length: "", width: "", height: "", weight: "", volumetric_weight: "" },
     ],
@@ -51,7 +52,8 @@ const Quotation = () => {
     dispatch(fetchCustomers());
     setFormData((prev) => ({
       ...prev,
-      created_by: user?.name || "Admin",
+      created_by: user?.id || null,        // ✅ always ID
+      created_by_name: user?.name || "Admin", // ✅ UI string
     }));
   }, [dispatch, mounted, user]);
 
@@ -73,7 +75,8 @@ const Quotation = () => {
         origin: "",
         destination: "",
         actual_weight: "",
-        created_by: user?.name || "Admin",
+        created_by: user?.id || "",           // ✅ send to backend
+        created_by_name: user?.name || "Admin", // ✅ show in UI
         packages: [
           {
             length: "",
@@ -308,16 +311,22 @@ const Quotation = () => {
           className="form-input"
         />
 
-        {/* Created By (prefilled) */}
-        <input
-          type="text"
-          name="created_by"
-          value={formData.created_by}
-          onChange={handleChange}
-          placeholder="Created By"
-          className="form-input bg-gray-100"
-          readOnly
-        />
+       {/* Display Name (UI only) */}
+<input
+  type="text"
+  name="created_by_name"
+  value={formData.created_by_name}
+  className="form-input bg-gray-100"
+  readOnly
+/>
+
+{/* Hidden field to send actual ID to backend */}
+<input
+  type="hidden"
+  name="created_by"
+  value={formData.created_by}
+/>
+
 
         {/* Packages */}
         <div className="col-span-2">

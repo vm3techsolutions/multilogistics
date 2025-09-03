@@ -84,6 +84,7 @@ const createQuotation = async (req, res) => {
 
     // Step 3: Insert packages
     for (let pkg of packages) {
+      if (pkg.length || pkg.width || pkg.height || pkg.weight) {
       await client.query(
         `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -96,9 +97,11 @@ const createQuotation = async (req, res) => {
         ]
       );
     }
+    }
 
     // Step 4: Insert charges
     for (let chg of charges) {
+      if (chg.charge_name || chg.amount) {
       await client.query(
         `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -110,6 +113,7 @@ const createQuotation = async (req, res) => {
           chg.description || null
         ]
       );
+    }
     }
 
     await client.query('COMMIT');
