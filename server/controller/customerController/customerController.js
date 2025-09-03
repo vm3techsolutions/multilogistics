@@ -22,18 +22,15 @@ const db = require('../../config/db');
  * @param {import('express').Response} res - Express response object
  * @returns {Promise<void>} Sends a JSON response with the created customer or an error message.
  */
+// ✅ Create Customer
 const createCustomer = async (req, res) => {
   const { name, company_name, email, phone, address } = req.body;
 
-  // Validate required fields
   if (!name || !company_name || !email || !phone || !address) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  console.log(`Creating customer: ${name}, Email: ${email}, Company: ${company_name}`);
-
   try {
-    // Check if customer already exists
     const checkSql = `SELECT * FROM customers WHERE email = $1`;
     const existing = await db.query(checkSql, [email]);
 
@@ -41,7 +38,6 @@ const createCustomer = async (req, res) => {
       return res.status(409).json({ message: 'Customer already exists with this email' });
     }
 
-    // Insert new customer
     const insertSql = `
       INSERT INTO customers (name, company_name, email, phone, address, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
@@ -49,11 +45,7 @@ const createCustomer = async (req, res) => {
     `;
 
     const result = await db.query(insertSql, [
-      name,
-      company_name,
-      email,
-      phone,
-      address
+      name, company_name, email, phone, address
     ]);
 
     return res.status(201).json({
@@ -67,6 +59,20 @@ const createCustomer = async (req, res) => {
   }
 };
 
+// ✅ Get All Customers
+const getCustomers = async (req, res) => {
+  try {
+    const sql = `SELECT * FROM customers ORDER BY created_at DESC`;
+    const result = await db.query(sql);
+
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Get Customers Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = {
   createCustomer,
+  getCustomers,
 };

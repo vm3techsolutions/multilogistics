@@ -1,11 +1,10 @@
 const db = require('../../config/db');
 
-
-// POST /api/admin/agents
+// ======================== CREATE AGENT ========================
 /**
  * Creates a new agent in the database.
  *
- * Expects the following fields in the request body:
+ * Expects:
  * - name: string (required)
  * - email: string (required)
  * - contact_person_name: string (required)
@@ -13,20 +12,8 @@ const db = require('../../config/db');
  * - country: string (required)
  * - type: string ('import' or 'export', required)
  *
- * Requires authenticated user information in req.user.id (from JWT middleware).
- *
- * Validates input fields and agent type.
- * Checks for existing agent with the same email.
- * Inserts the new agent into the database if validation passes.
- *
- * @async
- * @function createAgent
- * @param {import('express').Request} req - Express request object
- * @param {import('express').Response} res - Express response object
- * @returns {Promise<void>} Sends a JSON response with the created agent or an error message.
+ * Requires authenticated user info in req.user.id (from JWT middleware).
  */
-
-
 const createAgent = async (req, res) => {
   const { name, email, contact_person_name, phone, country, type } = req.body;
   const createdBy = req.user.id; // From JWT middleware
@@ -35,8 +22,9 @@ const createAgent = async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  console.log(`Creating agent: ${name}, Email: ${email}, Type: ${type}, Created By: ${createdBy}, Phone: ${phone}, Country: ${country}`);
-  
+  console.log(
+    `Creating agent: ${name}, Email: ${email}, Type: ${type}, Created By: ${createdBy}, Phone: ${phone}, Country: ${country}`
+  );
 
   const validTypes = ['import', 'export'];
   if (!validTypes.includes(type)) {
@@ -72,14 +60,37 @@ const createAgent = async (req, res) => {
       message: 'Agent created successfully',
       agent: result.rows[0],
     });
-
   } catch (err) {
     console.error('Create Agent Error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
+// ======================== GET ALL AGENTS ========================
+/**
+ * Fetches all agents from the database.
+ *
+ * @async
+ * @function getAllAgents
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+const getAllAgents = async (req, res) => {
+  try {
+    const sql = `SELECT * FROM agents ORDER BY created_at DESC`;
+    const result = await db.query(sql);
+
+    return res.status(200).json({
+      message: 'Agents fetched successfully',
+      agents: result.rows,
+    });
+  } catch (err) {
+    console.error('Get All Agents Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
 
 module.exports = {
   createAgent,
+  getAllAgents,
 };

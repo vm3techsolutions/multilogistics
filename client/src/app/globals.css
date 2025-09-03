@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --colorPrimary: #1C5070;
+  --colorSecondary: #33A6DB;
 }
 
 @theme inline {
@@ -10,6 +12,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary: var(--colorPrimary);
+  --color-secondary: var(--colorSecondary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +27,25 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.primaryText{
+  color: var(--colorPrimary);
+}
+
+.secondaryText{
+  color: var(--colorSecondary);
+}
+
+.primaryBg{
+  background-color: var(--colorPrimary);
+}
+
+.secondaryBg{
+  background-color: var(--colorSecondary);
+}
+
+/* Form */
+.form-input {
+  @apply w-full p-3 rounded-lg bg-[#F7FCFE];
 }

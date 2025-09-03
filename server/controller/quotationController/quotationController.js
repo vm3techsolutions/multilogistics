@@ -22,6 +22,11 @@ async function generateQuoteNumber() {
   return `QTN-${datePart}-${String(sequence).padStart(3, '0')}`;
 }
 
+const sanitizeNumber = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  return isNaN(value) ? null : Number(value);
+};
+
 const createQuotation = async (req, res) => {
   const client = await pool.connect();
   try {
@@ -41,7 +46,10 @@ const createQuotation = async (req, res) => {
     // Auto-calculate volume weight
     const volumeFactor = 5000; // adjust as needed
     let totalVolumeWeight = packages.reduce((sum, pkg) => {
-      return sum + (pkg.length * pkg.width * pkg.height) / volumeFactor;
+      const l = sanitizeNumber(pkg.length) || 0;
+      const w = sanitizeNumber(pkg.width) || 0;
+      const h = sanitizeNumber(pkg.height) || 0;
+      return sum + (l * w * h) / volumeFactor;
     }, 0);
 
     const packages_count = packages.length;
@@ -59,7 +67,17 @@ const createQuotation = async (req, res) => {
       RETURNING id
     `;
     const quotationValues = [
-      quote_no, subject, customer_id, agent_id, address, origin, destination, actual_weight, totalVolumeWeight, packages_count, created_by
+      quote_no,
+      subject || null,
+      sanitizeNumber(customer_id),
+      sanitizeNumber(agent_id),
+      address || null,
+      origin || null,
+      destination || null,
+      sanitizeNumber(actual_weight),
+      sanitizeNumber(totalVolumeWeight),
+      sanitizeNumber(packages_count),
+      sanitizeNumber(created_by)
     ];
     const quotationResult = await client.query(insertQuotationQuery, quotationValues);
     const quotationId = quotationResult.rows[0].id;
@@ -69,7 +87,13 @@ const createQuotation = async (req, res) => {
       await client.query(
         `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
          VALUES ($1, $2, $3, $4, $5)`,
-        [quotationId, pkg.length, pkg.width, pkg.height, pkg.weight]
+        [
+          quotationId,
+          sanitizeNumber(pkg.length),
+          sanitizeNumber(pkg.width),
+          sanitizeNumber(pkg.height),
+          sanitizeNumber(pkg.weight)
+        ]
       );
     }
 
@@ -78,7 +102,13 @@ const createQuotation = async (req, res) => {
       await client.query(
         `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
          VALUES ($1, $2, $3, $4, $5)`,
-        [quotationId, chg.charge_name, chg.type, chg.amount, chg.description]
+        [
+          quotationId,
+          chg.charge_name || null,
+          chg.type || null,
+          sanitizeNumber(chg.amount),
+          chg.description || null
+        ]
       );
     }
 
@@ -99,6 +129,49 @@ const createQuotation = async (req, res) => {
   }
 };
 
-module.exports = {
-  createQuotation
+// ✅ Get all quotations
+const getAllQuotations = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const quotationsQuery = `
+      SELECT q.id, q.quote_no, q.subject, q.customer_id, q.agent_id, q.address, 
+             q.origin, q.destination, q.actual_weight, q.volume_weight, 
+             q.packages_count, q.created_by, q.created_at, q.updated_at
+      FROM courier_export_quotations q
+      ORDER BY q.created_at DESC
+    `;
+    const { rows: quotations } = await client.query(quotationsQuery);
+
+    // Optionally fetch packages & charges for each quotation
+    for (let quotation of quotations) {
+      const { rows: packages } = await client.query(
+        `SELECT id, length, width, height, weight 
+         FROM courier_export_quotation_packages 
+         WHERE quotation_id = $1`,
+        [quotation.id]
+      );
+      quotation.packages = packages;
+
+      const { rows: charges } = await client.query(
+        `SELECT id, charge_name, type, amount, description
+         FROM courier_export_quotation_charges 
+         WHERE quotation_id = $1`,
+        [quotation.id]
+      );
+      quotation.charges = charges;
+    }
+
+    res.json({
+      success: true,
+      message: "Quotations fetched successfully",
+      data: quotations
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching quotations", error: error.message });
+  } finally {
+    client.release();
+  }
 };
+
+module.exports = {createQuotation,  getAllQuotations};
