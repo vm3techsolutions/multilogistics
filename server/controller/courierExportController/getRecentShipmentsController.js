@@ -3,7 +3,9 @@ const db = require("../../config/db");
 const getRecentShipmentsController = (req, res) => {
   const sql = `
     SELECT 
-      awb_no, destination, status, created_at
+      awb_number AS awb_no, 
+      place_of_delivery AS destination, 
+      created_at
     FROM courier_exports
     ORDER BY created_at DESC
     LIMIT 10
@@ -14,8 +16,8 @@ const getRecentShipmentsController = (req, res) => {
       console.error("Error fetching recent shipments:", err);
       return res.status(500).json({ error: "Database query failed" });
     }
-    res.json(results);
+    res.json(results.rows);
   });
 };
 
-module.exports = getRecentShipmentsController;
+module.exports = { getRecentShipmentsController };

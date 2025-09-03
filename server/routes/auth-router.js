@@ -9,7 +9,7 @@ const { createCustomer, getCustomers  } = require('../controller/customerControl
 const { createCourierExport } = require('../controller/courierExportController/courierExportController');
 const { createQuotation, getAllQuotations } = require('../controller/quotationController/quotationController');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
-const getRecentShipmentsController = require("../controller/courierExportController/getRecentShipmentsController");
+const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
 
 // Admin Signup Route
 router.post('/signup', adminController.adminSignUp);
@@ -31,11 +31,11 @@ router.get('/getCustomers', getCustomers);
 
 // Quotation Routes
 router.post('/createQuotation', verifyToken, createQuotation);
-router.post('/getAllQuotations', getAllQuotations);
+router.get('/getAllQuotations',verifyToken, getAllQuotations);
 
 // Courier Exports Route
 router.post('/courier-exports', verifyToken, createCourierExport);
-router.get('/courier-exports/stats', getCourierStats);
+router.get('/courier-exports/stats',verifyToken, getCourierStats);
 router.get("/recent-shipments", getRecentShipmentsController);
 
 module.exports = router;
