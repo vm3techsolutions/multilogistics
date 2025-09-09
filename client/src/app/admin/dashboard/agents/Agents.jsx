@@ -27,22 +27,24 @@ export default function Agents() {
     });
   };
 
-  // ✅ Sort first, then filter
-  const sortedAgents = [...agents].sort((a, b) => b.id - a.id);
+ // Sort first, then filter
+const sortedAgents = [...agents].sort((a, b) => (b.id || 0) - (a.id || 0));
 
-  // Filter by search + type
-  const filteredAgents = sortedAgents.filter((agent) => {
-    const matchesSearch =
-      searchId === "" ||
-      agent.id.toString().includes(searchId.trim()) ||
-      agent.agency_name.toLowerCase().includes(searchId.toLowerCase()) ||
-      agent.contact_person.toLowerCase().includes(searchId.toLowerCase());
+// Filter by search and type
+const filteredAgents = sortedAgents.filter((agent) => {
+  const matchesSearch =
+    searchId === "" ||
+    (agent.id && agent.id.toString().includes(searchId.trim())) ||
+    (agent.name && agent.name.toLowerCase().includes(searchId.toLowerCase())) ||
+    (agent.contact_person_name && agent.contact_person_name.toLowerCase().includes(searchId.toLowerCase()));
 
-    const matchesType =
-      typeFilter === "" || agent.type?.toLowerCase() === typeFilter.toLowerCase();
+  const matchesType =
+    typeFilter === "" || (agent.type && agent.type.toLowerCase() === typeFilter.toLowerCase());
 
-    return matchesSearch && matchesType;
-  });
+  return matchesSearch && matchesType;
+});
+
+
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAgents.length / agentsPerPage);
