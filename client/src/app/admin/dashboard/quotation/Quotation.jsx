@@ -1,14 +1,17 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createQuotation,
   resetQuotationState,
 } from "@/store/slices/quotationSlice";
 import { fetchCustomers } from "@/store/slices/customerSlice";
+import { useParams } from 'react-router-dom';
 
 const Quotation = () => {
   const dispatch = useDispatch();
+  const { quotationId } = useParams(); // if using react-router
+  const isEditMode = !!quotationId;
 
   // Redux state
   const { list: customers = [] } = useSelector((state) => state.customers || {});

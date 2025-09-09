@@ -178,4 +178,172 @@ const getAllQuotations = async (req, res) => {
   }
 };
 
-module.exports = {createQuotation,  getAllQuotations};
+// Get QUotation by ID
+const getQuotationById = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const quotationId = sanitizeNumber(req.params.id);
+    if (!quotationId) {
+      return res.status(400).json({ success: false, message: "Invalid quotation ID" });
+    }
+
+    const { rows: quotations } = await client.query(
+      `SELECT id, quote_no, subject, customer_id, agent_id, address, origin, destination, 
+              actual_weight, volume_weight, packages_count, created_by, created_at, updated_at
+       FROM courier_export_quotations
+       WHERE id = $1`,
+      [quotationId]
+    );
+
+    if (quotations.length === 0) {
+      return res.status(404).json({ success: false, message: "Quotation not found" });
+    }
+
+    const quotation = quotations[0];
+
+    const { rows: packages } = await client.query(
+      `SELECT id, length, width, height, weight 
+       FROM courier_export_quotation_packages
+       WHERE quotation_id = $1`,
+      [quotationId]
+    );
+    quotation.packages = packages;
+
+    const { rows: charges } = await client.query(
+      `SELECT id, charge_name, type, amount, description 
+       FROM courier_export_quotation_charges
+       WHERE quotation_id = $1`,
+      [quotationId]
+    );
+    quotation.charges = charges;
+
+    res.json({
+      success: true,
+      message: "Quotation fetched successfully",
+      data: quotation
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching quotation", error: error.message });
+  } finally {
+    client.release();
+  }
+};
+
+// Update Quotation
+const updateQuotation = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const quotationId = sanitizeNumber(req.params.id);
+    if (!quotationId) {
+      return res.status(400).json({ success: false, message: "Invalid quotation ID" });
+    }
+
+    const {
+      subject,
+      customer_id,
+      agent_id,
+      address,
+      origin,
+      destination,
+      actual_weight,
+      packages = [],
+      charges = []
+    } = req.body;
+
+    const volumeFactor = 5000;
+    let totalVolumeWeight = packages.reduce((sum, pkg) => {
+      const l = sanitizeNumber(pkg.length) || 0;
+      const w = sanitizeNumber(pkg.width) || 0;
+      const h = sanitizeNumber(pkg.height) || 0;
+      return sum + (l * w * h) / volumeFactor;
+    }, 0);
+
+    const packages_count = packages.length;
+
+    await client.query('BEGIN');
+
+    // Update main quotation
+    const updateQuotationQuery = `
+      UPDATE courier_export_quotations
+      SET subject = $1,
+          customer_id = $2,
+          agent_id = $3,
+          address = $4,
+          origin = $5,
+          destination = $6,
+          actual_weight = $7,
+          volume_weight = $8,
+          packages_count = $9,
+          updated_at = NOW()
+      WHERE id = $10
+    `;
+    await client.query(updateQuotationQuery, [
+      subject || null,
+      sanitizeNumber(customer_id),
+      sanitizeNumber(agent_id),
+      address || null,
+      origin || null,
+      destination || null,
+      sanitizeNumber(actual_weight),
+      sanitizeNumber(totalVolumeWeight),
+      sanitizeNumber(packages_count),
+      quotationId
+    ]);
+
+    // Delete existing packages & insert new ones
+    await client.query(`DELETE FROM courier_export_quotation_packages WHERE quotation_id = $1`, [quotationId]);
+    for (let pkg of packages) {
+      if (pkg.length || pkg.width || pkg.height || pkg.weight) {
+        await client.query(
+          `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            quotationId,
+            sanitizeNumber(pkg.length),
+            sanitizeNumber(pkg.width),
+            sanitizeNumber(pkg.height),
+            sanitizeNumber(pkg.weight)
+          ]
+        );
+      }
+    }
+
+    // Delete existing charges & insert new ones
+    await client.query(`DELETE FROM courier_export_quotation_charges WHERE quotation_id = $1`, [quotationId]);
+    for (let chg of charges) {
+      if (chg.charge_name || chg.amount) {
+        await client.query(
+          `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            quotationId,
+            chg.charge_name || null,
+            chg.type || null,
+            sanitizeNumber(chg.amount),
+            chg.description || null
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: "Quotation updated successfully",
+      data: { quotationId, totalVolumeWeight, packages_count }
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error updating quotation", error: error.message });
+  } finally {
+    client.release();
+  }
+};
+
+
+module.exports = {createQuotation,  getAllQuotations, getQuotationById, updateQuotation};

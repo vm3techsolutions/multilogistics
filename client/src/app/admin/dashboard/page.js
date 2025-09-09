@@ -10,9 +10,10 @@ import Orders from "./orders/Orders";
 // import Shipments from "./Shipments/Shipments";
 // import Invoice from "./invoice/Invoice";
 // import Receipt from "./Receipt/Receipt";
-import Quotation from "./Quotation/Quotation";
+// import Quotation from "./Quotation/Quotation";
 import CustDetails from "./customer-details/CustDetails";
 import Agents from "./agents/Agents";
+import QuotationList from "./quotation/QuotationList";
 
 export default function DashboardPage() {
   const { isAuthenticated, username, loading } = useSelector(
@@ -42,7 +43,7 @@ export default function DashboardPage() {
         return <Orders />;
       // case "Shipments": return <Shipments />;
       case "Agents": return <Agents />;
-      case "Quotation": return <Quotation />;
+      case "Quotation": return <QuotationList />;
       case "Customers": 
         return <CustDetails />;
         // case "Invoice": return <Invoice />;

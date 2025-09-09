@@ -7,7 +7,7 @@ const adminController = require('../controller/adminController/adminController')
 const {createAgent, getAllAgents} = require('../controller/agentController/agentController');
 const { createCustomer, getCustomers  } = require('../controller/customerController/customerController');
 const { createCourierExport } = require('../controller/courierExportController/courierExportController');
-const { createQuotation, getAllQuotations } = require('../controller/quotationController/quotationController');
+const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
 
@@ -32,6 +32,8 @@ router.get('/getCustomers', getCustomers);
 // Quotation Routes
 router.post('/createQuotation', verifyToken, createQuotation);
 router.get('/getAllQuotations',verifyToken, getAllQuotations);
+router.get('/getQuotationById/:id', verifyToken, getQuotationById);
+router.put('/updateQuotation/:id', verifyToken, updateQuotation);
 
 // Courier Exports Route
 router.post('/courier-exports', verifyToken, createCourierExport);
