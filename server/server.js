@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 
 // Routes
-app.use('/', router);
+app.use('/api', router);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
