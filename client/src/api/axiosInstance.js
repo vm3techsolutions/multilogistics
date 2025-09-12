@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Check the API base URL
+console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL);
+
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL, // Ensure this is defined in your environment
   headers: {
