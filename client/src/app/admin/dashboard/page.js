@@ -1,3 +1,4 @@
+// DashboardPage.jsx
 "use client";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -7,10 +8,6 @@ import SidebarAdmin from "@/components/SidebarAdmin";
 // Import section components
 import Overview from "./overview/Overview";
 import Orders from "./orders/Orders";
-// import Shipments from "./Shipments/Shipments";
-// import Invoice from "./invoice/Invoice";
-// import Receipt from "./Receipt/Receipt";
-// import Quotation from "./Quotation/Quotation";
 import CustDetails from "./customer-details/CustDetails";
 import Agents from "./agents/Agents";
 import QuotationList from "./quotation/QuotationList";
@@ -23,8 +20,8 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [ordersSubTab, setOrdersSubTab] = useState("Import"); // New state for orders dropdown
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!loading) {
       if (!isAuthenticated) {
@@ -40,14 +37,13 @@ export default function DashboardPage() {
       case "Overview":
         return <Overview />;
       case "Orders":
-        return <Orders />;
-      // case "Shipments": return <Shipments />;
-      case "Agents": return <Agents />;
-      case "Quotation": return <QuotationList />;
-      case "Customers": 
+        return <Orders subTab={ordersSubTab} setSubTab={setOrdersSubTab} />; // Pass props
+      case "Agents":
+        return <Agents />;
+      case "Quotation":
+        return <QuotationList />;
+      case "Customers":
         return <CustDetails />;
-        // case "Invoice": return <Invoice />;
-      // case "Receipt": return <Receipt />;
       default:
         return <Overview />;
     }
@@ -62,17 +58,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <>  
     <div className="flex h-screen">
-      {/* Sidebar */}
       <SidebarAdmin username={username} />
-
-      {/* Right Content Area */}
       <div className="flex-1 bg-[#FBFDFE] p-6 overflow-y-auto">
         {renderContent()}
       </div>
     </div>
-    </>
-    
   );
 }

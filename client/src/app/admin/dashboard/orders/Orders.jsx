@@ -1,9 +1,40 @@
-import React from 'react'
+// Orders.jsx
+"use client";
+import Import from "./Import";
+import Export from "./Export";
 
-export default function Orders() {
+export default function Orders({ subTab, setSubTab }) {
   return (
-    <div>
-      <h1>Orders</h1>
+    <div className="p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Orders</h2>
+
+      <div className="flex space-x-4 mb-4 border-b border-gray-300">
+        <button
+          onClick={() => setSubTab("Import")}
+          className={`px-4 py-2 transition ${
+            subTab === "Import"
+              ? "border-b-2 border-blue-600 font-semibold"
+              : "hover:text-blue-600"
+          }`}
+        >
+          Import
+        </button>
+        <button
+          onClick={() => setSubTab("Export")}
+          className={`px-4 py-2 transition ${
+            subTab === "Export"
+              ? "border-b-2 border-blue-600 font-semibold"
+              : "hover:text-blue-600"
+          }`}
+        >
+          Export
+        </button>
+      </div>
+
+      <div>
+        {subTab === "Import" && <Import />}
+        {subTab === "Export" && <Export />}
+      </div>
     </div>
-  )
+  );
 }
