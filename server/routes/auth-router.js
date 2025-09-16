@@ -6,7 +6,7 @@ const verifyToken = require('../middleware/auth');
 const adminController = require('../controller/adminController/adminController');
 const {createAgent, getAllAgents} = require('../controller/agentController/agentController');
 const { createCustomer, getCustomers  } = require('../controller/customerController/customerController');
-const { createCourierExport } = require('../controller/courierExportController/courierExportController');
+const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
 const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
@@ -39,5 +39,7 @@ router.put('/updateQuotation/:id', verifyToken, updateQuotation);
 router.post('/courier-exports', verifyToken, createCourierExport);
 router.get('/courier-exports/stats',verifyToken, getCourierStats);
 router.get("/recent-shipments", getRecentShipmentsController);
+router.get('/courier-exports-all', verifyToken, getAllCourierExports);
+router.get('/courier-exports/:id', verifyToken, getCourierExportById);
 
 module.exports = router;

@@ -180,6 +180,57 @@ const createCourierExport = async (req, res) => {
   }
 };
 
+
+/**
+ * Get all courier exports with their items
+ */
+const getAllCourierExports = async (req, res) => {
+  const client = await db.connect();
+  try {
+    const exportsResult = await client.query(`
+      SELECT ce.*, json_agg(cei) AS items
+      FROM courier_exports ce
+      LEFT JOIN courier_export_items cei ON ce.id = cei.courier_export_id
+      GROUP BY ce.id
+      ORDER BY ce.created_at DESC
+    `);
+    res.status(200).json({ courier_exports: exportsResult.rows });
+  } catch (err) {
+    console.error('Get All Courier Exports Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Get a single courier export by ID with its items
+ */
+const getCourierExportById = async (req, res) => {
+  const { id } = req.params;
+  const client = await db.connect();
+  try {
+    const exportResult = await client.query(`
+      SELECT ce.*, json_agg(cei) AS items
+      FROM courier_exports ce
+      LEFT JOIN courier_export_items cei ON ce.id = cei.courier_export_id
+      WHERE ce.id = $1
+      GROUP BY ce.id
+    `, [id]);
+    if (exportResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Courier export not found' });
+    }
+    res.status(200).json({ courier_export: exportResult.rows[0] });
+  } catch (err) {
+    console.error('Get Courier Export By ID Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
-  createCourierExport
+  createCourierExport,
+  getAllCourierExports,
+  getCourierExportById
 };
