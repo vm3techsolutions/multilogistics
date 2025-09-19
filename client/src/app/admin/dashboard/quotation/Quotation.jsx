@@ -211,7 +211,7 @@ const Quotation = () => {
 
   return (
     <div className="max-w-full mx-auto p-6 bg-white rounded-xl shadow">
-      <h2 className="text-xl font-bold mb-4">Create Quotation</h2>
+      <h2 className="text-xl font-bold mb-4 primaryText">Create Quotation</h2>
 
       {error && <p className="text-red-500 mb-2">{error}</p>}
 
@@ -222,7 +222,7 @@ const Quotation = () => {
           name="quote_no"
           value={formData.quote_no}
           placeholder="Quote No (from backend)"
-          className="form-input bg-gray-100"
+          className="form-input text-gray-700 bg-gray-100"
           readOnly
         />
 
@@ -233,7 +233,7 @@ const Quotation = () => {
           value={formData.subject}
           onChange={handleChange}
           placeholder="Subject"
-          className="form-input"
+          className="form-input text-gray-700"
           required
         />
 
@@ -245,7 +245,7 @@ const Quotation = () => {
             value={formData.customer_name}
             onChange={handleCustomerInput}
             placeholder="Customer Name"
-            className="form-input"
+            className="form-input text-gray-700"
             autoComplete="off"
             required
           />
@@ -255,7 +255,7 @@ const Quotation = () => {
                 <li
                   key={c.id}
                   onClick={() => handleSelectCustomer(c)}
-                  className="p-2 cursor-pointer hover:bg-gray-100"
+                  className="p-2 cursor-pointer text-gray-700 hover:bg-gray-100"
                 >
                   {c.name}
                 </li>
@@ -271,7 +271,7 @@ const Quotation = () => {
           value={formData.agent_id}
           onChange={handleChange}
           placeholder="Agent ID"
-          className="form-input"
+          className="form-input text-gray-700"
         />
 
         {/* Address */}
@@ -281,7 +281,7 @@ const Quotation = () => {
           value={formData.address}
           onChange={handleChange}
           placeholder="Address"
-          className="form-input col-span-1"
+          className="form-input col-span-1 text-gray-700"
         />
 
         {/* Origin */}
@@ -291,7 +291,7 @@ const Quotation = () => {
           value={formData.origin}
           onChange={handleChange}
           placeholder="Origin"
-          className="form-input"
+          className="form-input text-gray-700"
         />
 
         {/* Destination */}
@@ -301,7 +301,7 @@ const Quotation = () => {
           value={formData.destination}
           onChange={handleChange}
           placeholder="Destination"
-          className="form-input"
+          className="form-input text-gray-700"
         />
 
         {/* Actual Weight */}
@@ -311,7 +311,7 @@ const Quotation = () => {
           value={formData.actual_weight}
           onChange={handleChange}
           placeholder="Actual Weight"
-          className="form-input"
+          className="form-input text-gray-700"
         />
 
        {/* Display Name (UI only) */}
@@ -319,7 +319,7 @@ const Quotation = () => {
   type="text"
   name="created_by_name"
   value={formData.created_by_name}
-  className="form-input bg-gray-100"
+  className="form-input bg-gray-100 text-gray-700"
   readOnly
 />
 
@@ -334,7 +334,7 @@ const Quotation = () => {
         {/* Packages */}
         <div className="col-span-2">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold">Packages</h3>
+            <h3 className="font-semibold text-gray-700">Packages</h3>
             <button type="button" onClick={addPackage} className="text-blue-600">
               + Add Package
             </button>
@@ -348,7 +348,7 @@ const Quotation = () => {
                 value={pkg.length}
                 onChange={(e) => handlePackageChange(i, e)}
                 placeholder="Length (cm)"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="number"
@@ -356,7 +356,7 @@ const Quotation = () => {
                 value={pkg.width}
                 onChange={(e) => handlePackageChange(i, e)}
                 placeholder="Width (cm)"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="number"
@@ -364,7 +364,7 @@ const Quotation = () => {
                 value={pkg.height}
                 onChange={(e) => handlePackageChange(i, e)}
                 placeholder="Height (cm)"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="number"
@@ -372,14 +372,14 @@ const Quotation = () => {
                 value={pkg.weight}
                 onChange={(e) => handlePackageChange(i, e)}
                 placeholder="Actual Wt (kg)"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="text"
                 name="volumetric_weight"
                 value={pkg.volumetric_weight}
                 placeholder="Vol. Wt (kg)"
-                className="form-input bg-gray-100"
+                className="form-input bg-gray-100 text-gray-700"
                 readOnly
               />
               <div className="flex justify-end">
@@ -400,7 +400,7 @@ const Quotation = () => {
         {/* Charges */}
         <div className="col-span-2">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold">Charges</h3>
+            <h3 className="font-semibold text-gray-700">Charges</h3>
             <button type="button" onClick={addCharge} className="text-blue-600">
               + Add Charge
             </button>
@@ -414,7 +414,7 @@ const Quotation = () => {
                 value={chg.charge_name}
                 onChange={(e) => handleChargeChange(i, e)}
                 placeholder="Charge Name"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="text"
@@ -422,7 +422,7 @@ const Quotation = () => {
                 value={chg.type}
                 onChange={(e) => handleChargeChange(i, e)}
                 placeholder="Type"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="number"
@@ -430,7 +430,7 @@ const Quotation = () => {
                 value={chg.amount}
                 onChange={(e) => handleChargeChange(i, e)}
                 placeholder="Amount"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <input
                 type="text"
@@ -438,14 +438,14 @@ const Quotation = () => {
                 value={chg.description}
                 onChange={(e) => handleChargeChange(i, e)}
                 placeholder="Description"
-                className="form-input"
+                className="form-input text-gray-700"
               />
               <div className="flex justify-end">
                 {formData.charges.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeCharge(i)}
-                    className="text-red-600"
+                    className="text-red-600 text-gray-700"
                   >
                     Remove
                   </button>

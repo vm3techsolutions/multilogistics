@@ -24,7 +24,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
 
   return (
     <div className="bg-white p-6 rounded-lg w-full shadow-xl mt-6 border border-gray-200">
-      <h2 className="text-lg font-semibold mb-4">Add New Customer</h2>
+      <h2 className="text-lg font-semibold mb-4 primaryText">Add New Customer</h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -33,7 +33,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           onChange={(e) =>
             setNewCustomer({ ...newCustomer, name: e.target.value })
           }
-          className="border p-2 rounded w-full mb-2"
+          className="border p-2 rounded w-full mb-2 text-gray-700"
           required
         />
         <input
@@ -43,7 +43,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           onChange={(e) =>
             setNewCustomer({ ...newCustomer, company_name: e.target.value })
           }
-          className="border p-2 rounded w-full mb-2"
+          className="border p-2 rounded w-full mb-2 text-gray-700"
           required
         />
         <input
@@ -53,7 +53,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           onChange={(e) =>
             setNewCustomer({ ...newCustomer, email: e.target.value })
           }
-          className="border p-2 rounded w-full mb-2"
+          className="border p-2 rounded w-full mb-2 text-gray-700"
           required
         />
         <input
@@ -63,7 +63,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           onChange={(e) =>
             setNewCustomer({ ...newCustomer, phone: e.target.value })
           }
-          className="border p-2 rounded w-full mb-2"
+          className="border p-2 rounded w-full mb-2 text-gray-700"
           required
         />
         <input
@@ -73,7 +73,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           onChange={(e) =>
             setNewCustomer({ ...newCustomer, address: e.target.value })
           }
-          className="border p-2 rounded w-full mb-2"
+          className="border p-2 rounded w-full mb-2 text-gray-700"
           required
         />
         <div className="flex justify-end space-x-2">
@@ -86,7 +86,7 @@ export default function AddCustomerForm({ onSubmit, onCancel }) {
           </button>
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded"
+            className="bg-green-600 text-white px-4 py-2 rounded text-gray-700"
           >
             Save
           </button>

@@ -12,7 +12,7 @@ export default function RecentShipments() {
 
   return (
     <div className="lg:col-span-7 bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-      <h2 className="text-lg font-semibold mb-4">Recent Shipments</h2>
+      <h2 className="text-lg font-semibold mb-4 primaryText">Recent Shipments</h2>
 
       {loading ? (
         <p>Loading...</p>

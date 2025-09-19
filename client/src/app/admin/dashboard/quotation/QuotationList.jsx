@@ -34,7 +34,7 @@ const QuotationList = () => {
   return (
     <div className="p-6 bg-white shadow rounded-xl">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Quotation Management</h2>
+        <h2 className="text-xl font-bold primaryText">Quotation Management</h2>
 
         {/* Toggle button for Create / Back to List */}
         <button
@@ -62,7 +62,7 @@ const QuotationList = () => {
 
           {quotations.length > 0 && (
             <table className="w-full border-collapse border">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 text-gray-700">
                 <tr>
                   <th className="border p-2">Quote No</th>
                   <th className="border p-2">Subject</th>
@@ -75,7 +75,7 @@ const QuotationList = () => {
               </thead>
               <tbody>
                 {quotations.map((q) => (
-                  <tr key={q.id}>
+                  <tr key={q.id} className="text-gray-700">
                     <td className="border p-2">{q.quote_no}</td>
                     <td className="border p-2">{q.subject}</td>
                     <td className="border p-2">{q.customer_name}</td>
@@ -109,7 +109,7 @@ const QuotationList = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-[90%] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Edit Quotation</h3>
+              <h3 className="text-lg font-semibold primaryText">Edit Quotation</h3>
               <button
                 onClick={handleCloseEdit}
                 className="text-gray-600 hover:text-black"

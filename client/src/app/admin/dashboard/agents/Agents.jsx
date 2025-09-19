@@ -59,20 +59,20 @@ const filteredAgents = sortedAgents.filter((agent) => {
       {/* Search & Filter */}
       <div className="flex items-center gap-4 bg-white px-6 py-8 border-1 rounded-2xl border-gray-300">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by ID/Name"
+            placeholder="Search by Name"
             value={searchId}
             onChange={(e) => {
               setSearchId(e.target.value);
               setCurrentPage(1); // reset to first page when search
             }}
-            className="bg-[#F7FCFE] pl-10 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-cyan-800"
+            className="bg-[#F7FCFE] pl-10 p-2 rounded w-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-800"
           />
         </div>
         <select
-          className="bg-[#F7FCFE] px-4 py-3 rounded focus:outline-none focus:ring-2 focus:ring-cyan-800"
+          className="bg-[#F7FCFE] px-4 py-3 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-800"
           value={typeFilter}
           onChange={(e) => {
             setTypeFilter(e.target.value);
@@ -88,7 +88,7 @@ const filteredAgents = sortedAgents.filter((agent) => {
       {/* Agents Table */}
       <div className="relative mt-8 bg-white p-6 border border-gray-300 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Agents</h2>
+          <h2 className="text-xl font-semibold primaryText">Agents</h2>
         </div>
 
         {loading ? (
@@ -100,7 +100,7 @@ const filteredAgents = sortedAgents.filter((agent) => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-gray-200">
                 <thead>
-                  <tr className="bg-gray-100 text-left">
+                  <tr className="bg-gray-100 text-left text-gray-500">
                     <th className="p-3 border border-gray-200">ID</th>
                     <th className="p-3 border border-gray-200">Agency Name</th>
                     <th className="p-3 border border-gray-200">Contact Person</th>
@@ -112,7 +112,7 @@ const filteredAgents = sortedAgents.filter((agent) => {
                 </thead>
                 <tbody>
                   {currentAgents.map((agent) => (
-                    <tr key={agent.id} className="hover:bg-gray-50 transition">
+                    <tr key={agent.id} className="hover:bg-gray-50 transition text-gray-800">
                       <td className="p-3 border border-gray-200">{agent.id}</td>
                       <td className="p-3 border border-gray-200">{agent.name}</td>
                       <td className="p-3 border border-gray-200">{agent.contact_person_name}</td>

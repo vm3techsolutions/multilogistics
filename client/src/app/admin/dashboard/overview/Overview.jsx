@@ -52,11 +52,11 @@ export default function Overview() {
 
         {/* Notifications (30%) */}
         <div className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 primaryText">
             <Bell className="w-5 h-5 text-orange-500" />
             Notifications
           </h2>
-          <ul className="space-y-3 text-sm">
+          <ul className="space-y-3 text-sm text-gray-700">
             <li className="p-3 bg-gray-50 rounded-lg border">
               🚚 Shipment <b>AWB5678</b> is now{" "}
               <span className="text-yellow-600">In Transit</span>.

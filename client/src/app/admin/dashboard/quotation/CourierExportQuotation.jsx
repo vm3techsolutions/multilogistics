@@ -108,14 +108,14 @@ export default function Quotation() {
     <div className="max-w-6xl mx-auto relative">
       {/* ---------------- Form ---------------- */}
       <div className="bg-white px-6 py-8 rounded-2xl shadow border border-gray-200">
-        <h2 className="text-2xl font-semibold mb-6 border-b pb-2">
+        <h2 className="text-2xl font-semibold mb-6 border-b pb-2 text-gray-700">
           Create Export Quotation
         </h2>
 
         <div className="grid grid-cols-2 gap-6">
           {/* Quote No */}
           <div>
-            <label className="block text-sm font-medium">Quote No.</label>
+            <label className="block text-sm font-medium text-gray-800">Quote No.</label>
             <input
               type="text"
               value={quoteNo}
