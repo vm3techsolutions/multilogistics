@@ -19,7 +19,7 @@ export default function RecentShipments() {
       ) : (
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100 text-left text-sm text-gray-600">
+            <tr className="bg-gray-100 text-left text-sm text-gray-800">
               <th className="p-2">AWB No</th>
               <th className="p-2">Destination</th>
               <th className="p-2">Status</th>
@@ -28,7 +28,7 @@ export default function RecentShipments() {
           </thead>
           <tbody>
             {shipments.map((s, index) => (
-              <tr key={index} className="border-b text-sm">
+              <tr key={index} className="border-b text-sm text-gray-600">
                 <td className="p-2">{s.awb_no}</td>
                 <td className="p-2">{s.destination}</td>
                 <td className="p-2">{s.status}</td>

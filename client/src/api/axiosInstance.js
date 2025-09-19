@@ -4,12 +4,13 @@ import axios from 'axios';
 console.log('API Base URL:', process.env.NEXT_PUBLIC_API_URL);
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL, // Ensure this is defined in your environment
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+// Request interceptor to add token
 axiosInstance.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -21,7 +22,20 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    // Handle request error
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle unauthorized access
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        window.location.href = '/auth/login';
+      }
+    }
     return Promise.reject(error);
   }
 );

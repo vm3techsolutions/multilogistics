@@ -100,6 +100,7 @@ const quotationSlice = createSlice({
         state.error = null;
       })
       .addCase(getAllQuotations.fulfilled, (state, action) => {
+        console.log("Quotations API Response:", action.payload);
         state.loading = false;
         state.success = true;
         state.quotations = action.payload.data || [];

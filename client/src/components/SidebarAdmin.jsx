@@ -10,12 +10,12 @@ export default function SidebarAdmin({ username }) {
   const menuItems = [
     "Overview",
     "Orders",
-    "Shipments",
+    // "Shipments",
     "Agents",
     "Quotation",
-    "Customers",
-    "Invoice",
-    "Receipt"
+    "Customers"
+    // "Invoice",
+    // "Receipt"
   ];
 
   const handleItemClick = (item) => {

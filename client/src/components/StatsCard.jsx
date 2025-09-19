@@ -12,7 +12,7 @@ export default function StatsCard({ title, value, icon: Icon, color = "bg-blue-5
 
       {/* Text */}
       <div>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <p className="text-sm font-medium text-gray-800">{title}</p>
         <h2 className="text-2xl font-bold text-gray-800">{value}</h2>
       </div>
     </div>
