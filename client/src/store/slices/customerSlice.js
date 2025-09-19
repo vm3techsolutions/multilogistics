@@ -7,9 +7,22 @@ export const fetchCustomers = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get("/getCustomers");
-      return res.data; // assuming backend returns array of customers
+      return res.data; // backend returns array of customers
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to fetch customers");
+    }
+  }
+);
+
+// ✅ Fetch single customer by ID
+export const fetchCustomerById = createAsyncThunk(
+  "customers/fetchById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get(`/get-customer/${id}`);
+      return res.data; // backend returns single customer object
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to fetch customer");
     }
   }
 );
@@ -24,7 +37,7 @@ export const addCustomer = createAsyncThunk(
           Authorization: `Bearer ${localStorage.getItem("token")}`, // JWT token
         },
       });
-      return res.data.customer; // assuming backend returns { success, message, customer }
+      return res.data.customer; // backend returns { customer }
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to add customer");
     }
@@ -35,6 +48,7 @@ const customerSlice = createSlice({
   name: "customers",
   initialState: {
     list: [],
+    selectedCustomer: null, // for getCustomerById
     loading: false,
     error: null,
     success: false,
@@ -46,6 +60,7 @@ const customerSlice = createSlice({
       state.error = null;
       state.success = false;
       state.message = null;
+      state.selectedCustomer = null;
     },
   },
   extraReducers: (builder) => {
@@ -64,6 +79,22 @@ const customerSlice = createSlice({
         state.error = action.payload;
       })
 
+      // 🔹 Fetch Customer by ID
+      .addCase(fetchCustomerById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.selectedCustomer = null;
+      })
+      .addCase(fetchCustomerById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedCustomer = action.payload;
+      })
+      .addCase(fetchCustomerById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.selectedCustomer = null;
+      })
+
       // 🔹 Add Customer
       .addCase(addCustomer.pending, (state) => {
         state.loading = true;
@@ -74,7 +105,7 @@ const customerSlice = createSlice({
         state.loading = false;
         state.success = true;
         state.message = "Customer added successfully";
-        state.list.unshift(action.payload); // add new customer at top
+        state.list.unshift(action.payload);
       })
       .addCase(addCustomer.rejected, (state, action) => {
         state.loading = false;

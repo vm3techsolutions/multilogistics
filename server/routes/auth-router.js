@@ -5,7 +5,7 @@ const verifyToken = require('../middleware/auth');
 
 const adminController = require('../controller/adminController/adminController');
 const {createAgent, getAllAgents} = require('../controller/agentController/agentController');
-const { createCustomer, getCustomers  } = require('../controller/customerController/customerController');
+const { createCustomer, getCustomers, getCustomerById  } = require('../controller/customerController/customerController');
 const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
 const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { approveQuotation } = require('../controller/quotationController/approveQuotation');
@@ -28,7 +28,8 @@ router.get('/getAgents', getAllAgents);
 router.post('/addCustomer', verifyToken, createCustomer);
 
 // Get all customers
-router.get('/getCustomers', getCustomers);
+router.get('/getCustomers', verifyToken, getCustomers);
+router.get("/get-customer/:id", verifyToken, getCustomerById); 
 
 // Quotation Routes
 router.post('/createQuotation', verifyToken, createQuotation);
