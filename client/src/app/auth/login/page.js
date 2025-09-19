@@ -26,7 +26,7 @@ export default function Login() {
       {/* Left Side - Login Form */}
       <div className="flex-1 flex flex-col justify-center items-center p-10">
         <div className="w-full max-w-sm space-y-6">
-          <h2 className="text-2xl font-bold text-center">Admin Login</h2>
+          <h2 className="text-2xl font-bold text-center primaryText">Admin Login</h2>
 
           {/* Error Message */}
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -41,7 +41,7 @@ export default function Login() {
               placeholder="Enter email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#33A6DB] p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-lg border border-[#33A6DB] text-gray-700 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -55,7 +55,7 @@ export default function Login() {
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#33A6DB] p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="mt-1 w-full rounded-lg border text-gray-700 border-[#33A6DB] p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
