@@ -44,19 +44,19 @@ const AddAgentForm = ({ onClose }) => {
 
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md w-full max-w-lg">
-      <h2 className="text-xl font-semibold mb-4">Add New Agent</h2>
+    <div className="p-6 bg-white rounded-lg w-full max-w-lg">
+      <h2 className="text-xl font-semibold mb-4 primaryText">Add New Agent</h2>
 
       {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-gray-700">
         <input
           type="text"
           name="name"
           placeholder="Agent Name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full p-2 border rounded bg-[#F7FCFE]"
+          className="w-full p-2 border  rounded bg-[#F7FCFE]"
           required
         />
         <input
