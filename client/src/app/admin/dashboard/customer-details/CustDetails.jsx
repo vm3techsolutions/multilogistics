@@ -133,7 +133,7 @@ export default function CustDetails() {
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {cust.status || "N/A"}
+                          {cust.status || "Active"}
                         </span>
                       </td>
                     </tr>

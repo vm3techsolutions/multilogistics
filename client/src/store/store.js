@@ -6,6 +6,7 @@ import recentShipmentsReducer from "./slices/recentShipmentsSlice";
 import customerReducer from "./slices/customerSlice";   
 import quotationReducer from "./slices/quotationSlice";  
 import agentReducer from "./slices/agentSlice";  
+import courierExportReducer from "./slices/courierExportSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     customers: customerReducer, 
     quotation: quotationReducer,  
     agents: agentReducer,
+    courierExports: courierExportReducer,
   },
 });
