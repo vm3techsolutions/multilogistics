@@ -38,6 +38,7 @@ router.get('/getAllQuotations',verifyToken, getAllQuotations);
 router.get('/getQuotationById/:id', verifyToken, getQuotationById);
 router.put('/updateQuotation/:id', verifyToken, updateQuotation);
 router.put('/approveQuotation/:id', verifyToken, quotationStatusController.updateQuotationStatus);
+router.post('/quotation/send-email/:id', verifyToken, quotationStatusController.triggerQuotationEmail);
 
 // Courier Exports Route
 router.post('/courier-exports', verifyToken, createCourierExport);

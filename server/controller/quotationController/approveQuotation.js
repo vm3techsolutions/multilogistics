@@ -1,5 +1,5 @@
 const pool = require('../../config/db');
-
+const { sendQuotationMail } = require("../../utils/sendQuotationMail");
 
 
 const sanitizeNumber = (value) => {
@@ -136,5 +136,66 @@ const updateQuotationStatus = async (req, res) => {
 };
 
 
+/**
+ * Admin triggers sending quotation email manually
+ */
+const triggerQuotationEmail = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const quotationId = sanitizeNumber(req.params.id);
+    if (!quotationId) return res.status(400).json({ success: false, message: "Invalid quotation ID" });
 
-module.exports = { updateQuotationStatus };
+    // Fetch quotation with packages and charges
+    const { rows } = await client.query(
+      `SELECT q.id, q.quote_no, q.subject, q.origin, q.destination, q.actual_weight, q.status,
+              c.email AS customer_email, a.email AS agent_email
+       FROM courier_export_quotations q
+       LEFT JOIN customers c ON q.customer_id = c.id
+       LEFT JOIN agents a ON q.agent_id = a.id
+       WHERE q.id=$1`,
+      [quotationId]
+    );
+
+    if (!rows[0]) return res.status(404).json({ success: false, message: "Quotation not found" });
+
+    const quotation = rows[0];
+
+    // Fetch packages
+    const { rows: packages } = await client.query(
+      `SELECT length, width, height, weight 
+       FROM courier_export_quotation_packages 
+       WHERE quotation_id=$1`,
+      [quotationId]
+    );
+    quotation.packages = packages;
+
+    // Fetch charges
+    const { rows: charges } = await client.query(
+      `SELECT charge_name, type, amount, description
+       FROM courier_export_quotation_charges
+       WHERE quotation_id=$1`,
+      [quotationId]
+    );
+    quotation.charges = charges;
+
+    // Send email asynchronously
+    await sendQuotationMail(quotation.customer_email, quotation.agent_email, quotation);
+
+    res.json({
+      success: true,
+      message: "Quotation email triggered successfully",
+      data: { quotationId },
+    });
+  } catch (error) {
+    console.error("Error triggering quotation email:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to trigger quotation email",
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+module.exports = { updateQuotationStatus, triggerQuotationEmail };
