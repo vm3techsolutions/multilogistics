@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCustomers, addCustomer } from "@/store/slices/customerSlice";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import AddCustomerForm from "./AddCustomerForm";
 
 export default function CustDetails() {
@@ -64,7 +64,7 @@ export default function CustDetails() {
             value={searchId}
             onChange={(e) => {
               setSearchId(e.target.value);
-              setCurrentPage(1); // reset to first page when search
+              setCurrentPage(1);
             }}
             className="bg-[#F7FCFE] pl-10 p-2 text-gray-700 rounded w-full focus:outline-none focus:ring-2 focus:ring-cyan-800"
           />
@@ -74,7 +74,7 @@ export default function CustDetails() {
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value);
-            setCurrentPage(1); // reset to first page when filter
+            setCurrentPage(1);
           }}
         >
           <option value="">Status</option>
@@ -88,6 +88,13 @@ export default function CustDetails() {
       <div className="relative mt-8 bg-white p-6 border border-gray-300 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold primaryText">Customers</h2>
+          {/* Add Customer Button inside title row */}
+          <button
+            onClick={() => setShowForm(true)}
+            className="primaryBg text-white px-5 py-2 rounded-md shadow hover:bg-green-700 transition"
+          >
+            + Add Customer
+          </button>
         </div>
 
         {loading ? (
@@ -112,9 +119,7 @@ export default function CustDetails() {
                     <tr key={cust.id} className="hover:bg-gray-50 transition">
                       <td className="p-3 border border-gray-200">{cust.id}</td>
                       <td className="p-3 border border-gray-200">{cust.name}</td>
-                      <td className="p-3 border border-gray-200">
-                        {cust.company_name}
-                      </td>
+                      <td className="p-3 border border-gray-200">{cust.company_name}</td>
                       <td className="p-3 border border-gray-200">{cust.email}</td>
                       <td className="p-3 border border-gray-200">{cust.phone}</td>
                       <td className="p-3 border border-gray-200">{cust.address}</td>
@@ -128,7 +133,7 @@ export default function CustDetails() {
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {cust.status || "N/A"}
+                          {cust.status || "Active"}
                         </span>
                       </td>
                     </tr>
@@ -139,42 +144,39 @@ export default function CustDetails() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-4">
-              <p className="text-sm text-gray-500">
-                Showing {startIndex + 1}–{Math.min(startIndex + customersPerPage, filteredCustomers.length)} of {filteredCustomers.length}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  Prev
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => (
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-sm text-gray-500">
+                  Showing {startIndex + 1}–
+                  {Math.min(startIndex + customersPerPage, filteredCustomers.length)} of {filteredCustomers.length}
+                </p>
+                <div className="flex gap-2">
                   <button
-                    key={i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1 border rounded ${
-                      currentPage === i + 1
-                        ? "bg-green-600 text-white"
-                        : "bg-white"
-                    }`}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
                   >
-                    {i + 1}
+                    Prev
                   </button>
-                ))}
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 border rounded ${
+                        currentPage === i + 1 ? "bg-green-600 text-white" : "bg-white"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 border rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
             )}
           </>
         ) : (
@@ -182,21 +184,23 @@ export default function CustDetails() {
         )}
       </div>
 
-      {/* Add Customer Button */}
-      <button
-        onClick={() => setShowForm(true)}
-        className="primaryBg text-white float-end px-5 py-2 rounded-md mt-6 shadow hover:bg-green-700"
-      >
-        + Add Customer
-      </button>
-
-      {/* Add Customer Form */}
+      {/* Modal Popup for Add Customer */}
       {showForm && (
-        <div className="mt-6">
-          <AddCustomerForm
-            onSubmit={handleAddCustomer}
-            onCancel={() => setShowForm(false)}
-          />
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative transform transition-all duration-300 scale-95 animate-fadeIn">
+            {/* Close button */}
+            <button
+              onClick={() => setShowForm(false)}
+              className="absolute top-3 right-3 text-gray-600 hover:text-gray-800"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <AddCustomerForm
+              onSubmit={handleAddCustomer}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
         </div>
       )}
 

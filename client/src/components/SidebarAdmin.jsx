@@ -24,6 +24,14 @@ export default function SidebarAdmin({ username }) {
 
   return (
     <div className="w-64 border-r border-gray-300 bg-white text-gray-800 flex flex-col px-4 py-6">
+      {/* ✅ Logo at the top */}
+      <div className="flex justify-center mb-6">
+        <img
+          src="/assets/logo/logo.png" // if using Next.js Image component, adjust accordingly
+          alt="Multilogistic Logo"
+          className="h-16 w-auto object-contain"
+        />
+      </div>
       <nav className="space-y-2">
         {menuItems.map((item) => (
           <button

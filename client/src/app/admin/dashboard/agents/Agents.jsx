@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAgents, createAgent } from "@/store/slices/agentSlice";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import AddAgentForm from "./AddAgentForm";
 
 export default function Agents() {
@@ -10,7 +10,7 @@ export default function Agents() {
   const { agents, loading, error } = useSelector((state) => state.agents);
 
   const [searchId, setSearchId] = useState("");
-  const [typeFilter, setTypeFilter] = useState(""); // changed from statusFilter
+  const [typeFilter, setTypeFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   // Pagination
@@ -27,24 +27,27 @@ export default function Agents() {
     });
   };
 
- // Sort first, then filter
-const sortedAgents = [...agents].sort((a, b) => (b.id || 0) - (a.id || 0));
+  // Sort first, then filter
+  const sortedAgents = [...agents].sort((a, b) => (b.id || 0) - (a.id || 0));
 
-// Filter by search and type
-const filteredAgents = sortedAgents.filter((agent) => {
-  const matchesSearch =
-    searchId === "" ||
-    (agent.id && agent.id.toString().includes(searchId.trim())) ||
-    (agent.name && agent.name.toLowerCase().includes(searchId.toLowerCase())) ||
-    (agent.contact_person_name && agent.contact_person_name.toLowerCase().includes(searchId.toLowerCase()));
+  // Filter
+  const filteredAgents = sortedAgents.filter((agent) => {
+    const matchesSearch =
+      searchId === "" ||
+      (agent.id && agent.id.toString().includes(searchId.trim())) ||
+      (agent.name &&
+        agent.name.toLowerCase().includes(searchId.toLowerCase())) ||
+      (agent.contact_person_name &&
+        agent.contact_person_name
+          .toLowerCase()
+          .includes(searchId.toLowerCase()));
 
-  const matchesType =
-    typeFilter === "" || (agent.type && agent.type.toLowerCase() === typeFilter.toLowerCase());
+    const matchesType =
+      typeFilter === "" ||
+      (agent.type && agent.type.toLowerCase() === typeFilter.toLowerCase());
 
-  return matchesSearch && matchesType;
-});
-
-
+    return matchesSearch && matchesType;
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAgents.length / agentsPerPage);
@@ -66,7 +69,7 @@ const filteredAgents = sortedAgents.filter((agent) => {
             value={searchId}
             onChange={(e) => {
               setSearchId(e.target.value);
-              setCurrentPage(1); // reset to first page when search
+              setCurrentPage(1);
             }}
             className="bg-[#F7FCFE] pl-10 p-2 rounded w-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-800"
           />
@@ -76,7 +79,7 @@ const filteredAgents = sortedAgents.filter((agent) => {
           value={typeFilter}
           onChange={(e) => {
             setTypeFilter(e.target.value);
-            setCurrentPage(1); // reset to first page when filter
+            setCurrentPage(1);
           }}
         >
           <option value="">Type</option>
@@ -89,6 +92,14 @@ const filteredAgents = sortedAgents.filter((agent) => {
       <div className="relative mt-8 bg-white p-6 border border-gray-300 rounded-2xl">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold primaryText">Agents</h2>
+
+          {/* Add Agent Button inside title row */}
+          <button
+            onClick={() => setShowForm(true)}
+            className="primaryBg text-white px-5 py-2 rounded-md shadow hover:bg-green-700 transition"
+          >
+            + Add Agent
+          </button>
         </div>
 
         {loading ? (
@@ -103,7 +114,9 @@ const filteredAgents = sortedAgents.filter((agent) => {
                   <tr className="bg-gray-100 text-left text-gray-500">
                     <th className="p-3 border border-gray-200">ID</th>
                     <th className="p-3 border border-gray-200">Agency Name</th>
-                    <th className="p-3 border border-gray-200">Contact Person</th>
+                    <th className="p-3 border border-gray-200">
+                      Contact Person
+                    </th>
                     <th className="p-3 border border-gray-200">Email</th>
                     <th className="p-3 border border-gray-200">Phone</th>
                     <th className="p-3 border border-gray-200">Address</th>
@@ -112,13 +125,26 @@ const filteredAgents = sortedAgents.filter((agent) => {
                 </thead>
                 <tbody>
                   {currentAgents.map((agent) => (
-                    <tr key={agent.id} className="hover:bg-gray-50 transition text-gray-800">
+                    <tr
+                      key={agent.id}
+                      className="hover:bg-gray-50 transition text-gray-800"
+                    >
                       <td className="p-3 border border-gray-200">{agent.id}</td>
-                      <td className="p-3 border border-gray-200">{agent.name}</td>
-                      <td className="p-3 border border-gray-200">{agent.contact_person_name}</td>
-                      <td className="p-3 border border-gray-200">{agent.email}</td>
-                      <td className="p-3 border border-gray-200">{agent.phone}</td>
-                      <td className="p-3 border border-gray-200">{agent.country}</td>
+                      <td className="p-3 border border-gray-200">
+                        {agent.name}
+                      </td>
+                      <td className="p-3 border border-gray-200">
+                        {agent.contact_person_name}
+                      </td>
+                      <td className="p-3 border border-gray-200">
+                        {agent.email}
+                      </td>
+                      <td className="p-3 border border-gray-200">
+                        {agent.phone}
+                      </td>
+                      <td className="p-3 border border-gray-200">
+                        {agent.country}
+                      </td>
                       <td className="p-3 border border-gray-200">
                         {agent.type || "N/A"}
                       </td>
@@ -175,23 +201,23 @@ const filteredAgents = sortedAgents.filter((agent) => {
         )}
       </div>
 
-      {/* Add Agent Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowForm(true)}
-          className="primaryBg text-white px-5 py-2 rounded-md mt-6 shadow hover:bg-green-700"
-        >
-          + Add Agent
-        </button>
-      </div>
-
-      {/* Add Agent Form */}
+      {/* Modal Popup for Add Agent */}
       {showForm && (
-        <div className="mt-6">
-          <AddAgentForm
-            onSubmit={handleAddAgent}
-            onCancel={() => setShowForm(false)}
-          />
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 transform transition-all duration-300 scale-95 animate-fadeIn">
+            {/* Close button */}
+            <button
+              onClick={() => setShowForm(false)}
+              className="absolute top-3 right-3 text-gray-600 hover:text-gray-800"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <AddAgentForm
+              onSubmit={handleAddAgent}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
         </div>
       )}
 

@@ -48,6 +48,7 @@ const Quotation = () => {
   // Customer autocomplete state
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // On mount: fetch customers and prefill created_by
   useEffect(() => {
@@ -62,7 +63,7 @@ const Quotation = () => {
 
   // After successful creation: show returned quote_no and reset other fields
   useEffect(() => {
-    if (success) {
+    if (success && submitted) {
       // If backend returns the created quotation with quote_no, show it
       const newQuoteNo = quotation?.quote_no || "";
       alert("Quotation created successfully ✅");
@@ -205,7 +206,7 @@ const Quotation = () => {
   // Submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    // You could add minimal validation here if desired
+    setSubmitted(true);
     dispatch(createQuotation(formData));
   };
 
