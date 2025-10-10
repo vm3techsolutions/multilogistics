@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/api/axiosInstance";
 
-// Add new agent
+// ➕ Add new agent
 export const createAgent = createAsyncThunk(
   "agents/create",
   async (agentData, { rejectWithValue }) => {
@@ -14,13 +14,28 @@ export const createAgent = createAsyncThunk(
   }
 );
 
-// Get all agents
+// 📋 Get all agents
 export const getAgents = createAsyncThunk(
   "agents/getAll",
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await axiosInstance.get("/getAgents");
       return data.agents;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// ✏️ Update existing agent
+export const updateAgent = createAsyncThunk(
+  "agents/update",
+  async ({ id, updatedData }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.put(`/editAgent/${id}`, updatedData, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return data.agent; // ensure this matches your backend response
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -46,7 +61,7 @@ const agentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create
+      // ➕ Create
       .addCase(createAgent.pending, (state) => {
         state.loading = true;
       })
@@ -61,7 +76,7 @@ const agentSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Get all
+      // 📋 Get all
       .addCase(getAgents.pending, (state) => {
         state.loading = true;
       })
@@ -70,6 +85,23 @@ const agentSlice = createSlice({
         state.agents = action.payload;
       })
       .addCase(getAgents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ✏️ Update
+      .addCase(updateAgent.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateAgent.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        const index = state.agents.findIndex((a) => a.id === action.payload.id);
+        if (index !== -1) {
+          state.agents[index] = { ...state.agents[index], ...action.payload };
+        }
+      })
+      .addCase(updateAgent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

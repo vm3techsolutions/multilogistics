@@ -14,6 +14,7 @@ const QuotationList = () => {
 
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [viewQuotation, setViewQuotation] = useState(null);
   const [customerMap, setCustomerMap] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -44,13 +45,14 @@ const QuotationList = () => {
   }, [quotations]);
 
   const handleEdit = (quotation) => setEditingQuotation(quotation);
-  const handleView = (quotation) => alert(JSON.stringify(quotation, null, 2));
+  const handleView = (quotation) => setViewQuotation(quotation);
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this quotation?")) {
       console.log("Delete quotation ID:", id);
     }
   };
   const handleCloseEdit = () => setEditingQuotation(null);
+  const handleCloseView = () => setViewQuotation(null);
 
   const filteredQuotations = quotations.filter((q) => {
     const customerName = customerMap[q.customer_id] || "";
@@ -137,11 +139,11 @@ const QuotationList = () => {
                             size={20}
                             onClick={() => handleView(q)}
                           />
-                          <Trash2
+                          {/* <Trash2
                             className="cursor-pointer text-red-600"
                             size={20}
                             onClick={() => handleDelete(q.id)}
-                          />
+                          /> */}
                         </td>
                       </tr>
                     ))}
@@ -169,6 +171,106 @@ const QuotationList = () => {
             </div>
           </div>
         )}
+
+  {/* View Quotation Modal */}
+    {viewQuotation && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-2/3 max-h-[80%] overflow-y-auto relative">
+                {/* Header */}
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold primaryText">Quotation Details</h3>
+                  <button
+                    onClick={handleCloseView}
+                    className="text-gray-600 hover:text-black"
+                  >
+                    ✖
+                  </button>
+                </div>
+                
+       {/* Table Layout */}
+                    <table className="w-full border-collapse border text-sm">
+                      <tbody>
+                        {Object.entries(viewQuotation).map(([key, value]) => {
+                          if (!value) return null; // skip empty fields
+
+                          let displayValue = value;
+
+                          // ✅ Convert objects/arrays into readable format
+                          if (typeof value === "object") {
+                            if (Array.isArray(value)) {
+                              displayValue = (
+                                <div className="space-y-2">
+                                  {value.map((item, i) => (
+                                    <div key={i} className="mb-2">
+                                      <strong>Item {i + 1}:</strong>
+                                      <div className="ml-4">
+                                        {Object.entries(item).map(([k, v]) => {
+                                          let formattedValue = v;
+
+                                          // ✅ Add "kg" if key = weight
+                                          if (k.toLowerCase() === "weight") {
+                                            formattedValue = `${v} kg`;
+                                          }
+
+                                          // ✅ Add "₹" if key = amount
+                                          if (k.toLowerCase() === "amount") {
+                                            formattedValue = `₹${v}`;
+                                          }
+
+                                          return (
+                                            <div key={k}>
+                                              {k}: {formattedValue}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            } else {
+                              displayValue = (
+                                <div>
+                                  {Object.entries(value).map(([k, v]) => {
+                                    let formattedValue = v;
+
+                                    if (k.toLowerCase() === "weight") {
+                                      formattedValue = `${v} kg`;
+                                    }
+                                    if (k.toLowerCase() === "amount") {
+                                      formattedValue = `₹${v}`;
+                                    }
+
+                                    return (
+                                      <div key={k}>
+                                        {k}: {formattedValue}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            }
+                          }
+
+                          return (
+                            <tr key={key}>
+                              <td className="border p-2 font-semibold capitalize">
+                                {key.replace(/_/g, " ")}
+                              </td>
+                              <td className="border p-2">
+                                {key === "customer_id"
+                                  ? customerMap[value] || "Loading..."
+                                  : displayValue}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+              </div>
+            </div>
+            )}
+
       </div>
     </div>
   );

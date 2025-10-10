@@ -44,9 +44,9 @@ export const getQuotationById = createAsyncThunk(
 // ✅ Update quotation
 export const updateQuotation = createAsyncThunk(
   "quotation/updateQuotation",
-  async ({ id, formData }, { rejectWithValue }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/updateQuotation/${id}`, formData);
+      const response = await axiosInstance.put(`/updateQuotation/${id}`, data);
       return response.data; // { success, message, data: {...} }
     } catch (err) {
       return rejectWithValue(err.response?.data || { message: "Failed to update quotation" });
@@ -86,7 +86,7 @@ const quotationSlice = createSlice({
       .addCase(createQuotation.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.lastCreated = action.payload.data; // store the created quotation summary
+        state.lastCreated = action.payload.data || null;
       })
       .addCase(createQuotation.rejected, (state, action) => {
         state.loading = false;
@@ -100,7 +100,6 @@ const quotationSlice = createSlice({
         state.error = null;
       })
       .addCase(getAllQuotations.fulfilled, (state, action) => {
-        console.log("Quotations API Response:", action.payload);
         state.loading = false;
         state.success = true;
         state.quotations = action.payload.data || [];
@@ -118,7 +117,7 @@ const quotationSlice = createSlice({
       .addCase(getQuotationById.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.quotation = action.payload.data;
+        state.quotation = action.payload.data || null;
       })
       .addCase(getQuotationById.rejected, (state, action) => {
         state.loading = false;
@@ -134,9 +133,10 @@ const quotationSlice = createSlice({
       .addCase(updateQuotation.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.lastUpdated = action.payload.data;
-        // Optionally update the quotation in the list if it exists
-        const index = state.quotations.findIndex(q => q.id === action.payload.data.id);
+        state.lastUpdated = action.payload.data || null;
+
+        // Update in quotations list if exists
+        const index = state.quotations.findIndex(q => q.id === action.payload.data?.id);
         if (index !== -1) {
           state.quotations[index] = action.payload.data;
         }
