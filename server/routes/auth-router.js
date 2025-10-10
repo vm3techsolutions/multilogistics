@@ -4,7 +4,7 @@ const router = express.Router();
 const verifyToken = require('../middleware/auth');
 
 const adminController = require('../controller/adminController/adminController');
-const {createAgent, getAllAgents} = require('../controller/agentController/agentController');
+const agentController = require('../controller/agentController/agentController');
 const { createCustomer, getCustomers, getCustomerById  } = require('../controller/customerController/customerController');
 const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
 const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
@@ -21,8 +21,9 @@ router.get('/get-admin/:id', verifyToken, adminController.getAdminData);
 
 
 // Agent Routes
-router.post('/addAgent', verifyToken, createAgent); // Create Agent
-router.get('/getAgents', getAllAgents);
+router.post('/addAgent', verifyToken, agentController.createAgent); // Create Agent
+router.get('/getAgents',agentController.getAllAgents);
+router.put('/editAgent/:id', verifyToken, agentController.editAgent)
 
 // Customer Routes
 router.post('/addCustomer', verifyToken, createCustomer);

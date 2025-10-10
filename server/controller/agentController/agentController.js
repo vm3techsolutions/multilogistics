@@ -66,6 +66,53 @@ const createAgent = async (req, res) => {
   }
 };
 
+
+const editAgent = async (req, res) => {
+ 
+  const { id } = req.params;
+  const { name, email, contact_person_name, phone, country, type } = req.body;
+  if (!id) {
+    return res.status(400).json({ message: 'Agent ID is required' });
+  }
+  try {
+    // Check if agent exists
+    const checkSql = `SELECT * FROM agents WHERE id = $1`;
+    const existing = await db.query(checkSql, [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ message: 'Agent not found' });
+    }
+    // Update agent
+    const updateSql = `
+      UPDATE agents SET
+        name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        contact_person_name = COALESCE($3, contact_person_name),
+        phone = COALESCE($4, phone),
+        country = COALESCE($5, country),
+        type = COALESCE($6, type),
+        updated_at = NOW()
+      WHERE id = $7
+      RETURNING *
+    `;
+    const result = await db.query(updateSql, [
+      name,
+      email,
+      contact_person_name,
+      phone,
+      country,
+      type,
+      id,
+    ]);
+    return res.status(200).json({
+      message: 'Agent updated successfully',
+      agent: result.rows[0],
+    });
+  } catch (err) {
+    console.error('Edit Agent Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // ======================== GET ALL AGENTS ========================
 /**
  * Fetches all agents from the database.
@@ -93,4 +140,5 @@ const getAllAgents = async (req, res) => {
 module.exports = {
   createAgent,
   getAllAgents,
+  editAgent
 };
