@@ -54,6 +54,32 @@ export const updateQuotation = createAsyncThunk(
   }
 );
 
+// ✅ Update quotation status (approve / reject)
+export const updateQuotationStatus = createAsyncThunk(
+  "quotation/updateQuotationStatus",
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put(`/approveQuotation/${id}`, { status });
+      return response.data; // { success, message, data: { quotationId, status } }
+    } catch (err) {
+      return rejectWithValue(err.response?.data || { message: "Failed to update status" });
+    }
+  }
+);
+// src/redux/slices/quotationSlice.js
+export const triggerQuotationEmail = createAsyncThunk(
+  "quotation/triggerQuotationEmail",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(`/quotation/send-email/${id}`);
+      return response.data; // { success, message, data: { quotationId } }
+    } catch (err) {
+      return rejectWithValue(err.response?.data || { message: "Failed to trigger email" });
+    }
+  }
+);
+
+
 const quotationSlice = createSlice({
   name: "quotation",
   initialState: {
@@ -145,7 +171,42 @@ const quotationSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || "Failed to update quotation";
         state.success = false;
+      })
+
+      // Update quotation status
+      .addCase(updateQuotationStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateQuotationStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        const { quotationId, status } = action.payload.data;
+        // Update local quotation list
+        const index = state.quotations.findIndex(q => q.id === quotationId);
+        if (index !== -1) {
+          state.quotations[index].status = status;
+        }
+      })
+      .addCase(updateQuotationStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to update quotation status";
+      })
+      // Trigger quotation email
+      .addCase(triggerQuotationEmail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(triggerQuotationEmail.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(triggerQuotationEmail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to trigger email";
       });
+
+
   },
 });
 

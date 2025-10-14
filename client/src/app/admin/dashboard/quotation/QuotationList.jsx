@@ -1,7 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllQuotations } from "@/store/slices/quotationSlice";
+import {
+  getAllQuotations,
+  updateQuotationStatus,
+  triggerQuotationEmail
+} from "@/store/slices/quotationSlice";
 import { fetchCustomerById } from "@/store/slices/customerSlice";
 import Quotation from "./Quotation";
 import { Edit, Eye, Trash2, Search } from "lucide-react";
@@ -53,6 +57,19 @@ const QuotationList = () => {
   };
   const handleCloseEdit = () => setEditingQuotation(null);
   const handleCloseView = () => setViewQuotation(null);
+
+  const handleStatusChange = async (id, status) => {
+    if (!window.confirm(`Are you sure you want to ${status} this quotation?`))
+      return;
+    try {
+      const result = await dispatch(updateQuotationStatus({ id, status })).unwrap();
+      toast.success(result.message || `Quotation ${status} successfully`);
+      dispatch(getAllQuotations()); // refresh
+    } catch (err) {
+      console.error("Status update failed:", err);
+      toast.error(err.message || "Failed to update status");
+    }
+  };
 
   const filteredQuotations = quotations.filter((q) => {
     const customerName = customerMap[q.customer_id] || "";
@@ -115,7 +132,9 @@ const QuotationList = () => {
                       <th className="border p-2">Customer</th>
                       <th className="border p-2">Origin</th>
                       <th className="border p-2">Destination</th>
+                      <th className="border p-2">Status</th>
                       <th className="border p-2">Actions</th>
+                      <th className="border p-2">Status Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -128,6 +147,22 @@ const QuotationList = () => {
                         </td>
                         <td className="border p-2">{q.origin}</td>
                         <td className="border p-2">{q.destination}</td>
+
+                        {/* ✅ Status Column */}
+                        <td className="border p-2 capitalize text-center">
+                          <span
+                            className={`px-2 py-1 rounded text-sm font-medium ${q.status === "approved"
+                                ? "bg-green-100 text-green-700"
+                                : q.status === "rejected"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                          >
+                            {q.status || "pending"}
+                          </span>
+                        </td>
+
+                        {/* ✅ Edit / View Actions */}
                         <td className="border p-2 flex space-x-3 justify-center">
                           <Edit
                             className="cursor-pointer text-blue-600"
@@ -144,6 +179,43 @@ const QuotationList = () => {
                             size={20}
                             onClick={() => handleDelete(q.id)}
                           /> */}
+                        </td>
+
+                        {/* ✅ Approve / Reject Actions */}
+                        <td className="border p-2 text-center">
+                          <button
+                            disabled={q.status === "approved"}
+                            onClick={() => handleStatusChange(q.id, "approved")}
+                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            disabled={q.status === "rejected"}
+                            onClick={() => handleStatusChange(q.id, "rejected")}
+                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                          >
+                            Reject
+                          </button>
+                          {/* Send Email button only for approved quotations */}
+                          {q.status === "approved" && (
+                            <button
+                              onClick={async () => {
+                                if (!window.confirm("Send quotation email?")) return;
+                                try {
+                                  await dispatch(triggerQuotationEmail(q.id)).unwrap();
+                                  toast.success("Quotation email triggered successfully");
+                                } catch (err) {
+                                  toast.error(err.message || "Failed to send email");
+                                }
+                              }}
+                              className="px-2 py-1 text-sm font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                            >
+                              Send Email
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -172,105 +244,82 @@ const QuotationList = () => {
           </div>
         )}
 
-  {/* View Quotation Modal */}
-    {viewQuotation && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-2/3 max-h-[80%] overflow-y-auto relative">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold primaryText">Quotation Details</h3>
-                  <button
-                    onClick={handleCloseView}
-                    className="text-gray-600 hover:text-black"
-                  >
-                    ✖
-                  </button>
-                </div>
-                
-       {/* Table Layout */}
-                    <table className="w-full border-collapse border text-sm">
-                      <tbody>
-                        {Object.entries(viewQuotation).map(([key, value]) => {
-                          if (!value) return null; // skip empty fields
-
-                          let displayValue = value;
-
-                          // ✅ Convert objects/arrays into readable format
-                          if (typeof value === "object") {
-                            if (Array.isArray(value)) {
-                              displayValue = (
-                                <div className="space-y-2">
-                                  {value.map((item, i) => (
-                                    <div key={i} className="mb-2">
-                                      <strong>Item {i + 1}:</strong>
-                                      <div className="ml-4">
-                                        {Object.entries(item).map(([k, v]) => {
-                                          let formattedValue = v;
-
-                                          // ✅ Add "kg" if key = weight
-                                          if (k.toLowerCase() === "weight") {
-                                            formattedValue = `${v} kg`;
-                                          }
-
-                                          // ✅ Add "₹" if key = amount
-                                          if (k.toLowerCase() === "amount") {
-                                            formattedValue = `₹${v}`;
-                                          }
-
-                                          return (
-                                            <div key={k}>
-                                              {k}: {formattedValue}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
+        {/* View Quotation Modal */}
+        {viewQuotation && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-2/3 max-h-[80%] overflow-y-auto relative">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold primaryText">Quotation Details</h3>
+                <button
+                  onClick={handleCloseView}
+                  className="text-gray-600 hover:text-black"
+                >
+                  ✖
+                </button>
+              </div>
+              <table className="w-full border-collapse border text-sm">
+                <tbody>
+                  {Object.entries(viewQuotation).map(([key, value]) => {
+                    if (!value) return null;
+                    let displayValue = value;
+                    if (typeof value === "object") {
+                      if (Array.isArray(value)) {
+                        displayValue = (
+                          <div className="space-y-2">
+                            {value.map((item, i) => (
+                              <div key={i} className="mb-2">
+                                <strong>Item {i + 1}:</strong>
+                                <div className="ml-4">
+                                  {Object.entries(item).map(([k, v]) => (
+                                    <div key={k}>
+                                      {k}:{" "}
+                                      {k.toLowerCase() === "weight"
+                                        ? `${v} kg`
+                                        : k.toLowerCase() === "amount"
+                                          ? `₹${v}`
+                                          : v}
                                     </div>
                                   ))}
                                 </div>
-                              );
-                            } else {
-                              displayValue = (
-                                <div>
-                                  {Object.entries(value).map(([k, v]) => {
-                                    let formattedValue = v;
-
-                                    if (k.toLowerCase() === "weight") {
-                                      formattedValue = `${v} kg`;
-                                    }
-                                    if (k.toLowerCase() === "amount") {
-                                      formattedValue = `₹${v}`;
-                                    }
-
-                                    return (
-                                      <div key={k}>
-                                        {k}: {formattedValue}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            }
-                          }
-
-                          return (
-                            <tr key={key}>
-                              <td className="border p-2 font-semibold capitalize">
-                                {key.replace(/_/g, " ")}
-                              </td>
-                              <td className="border p-2">
-                                {key === "customer_id"
-                                  ? customerMap[value] || "Loading..."
-                                  : displayValue}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-              </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      } else {
+                        displayValue = (
+                          <div>
+                            {Object.entries(value).map(([k, v]) => (
+                              <div key={k}>
+                                {k}:{" "}
+                                {k.toLowerCase() === "weight"
+                                  ? `${v} kg`
+                                  : k.toLowerCase() === "amount"
+                                    ? `₹${v}`
+                                    : v}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                    }
+                    return (
+                      <tr key={key}>
+                        <td className="border p-2 font-semibold capitalize">
+                          {key.replace(/_/g, " ")}
+                        </td>
+                        <td className="border p-2">
+                          {key === "customer_id"
+                            ? customerMap[value] || "Loading..."
+                            : displayValue}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            )}
-
+          </div>
+        )}
       </div>
     </div>
   );

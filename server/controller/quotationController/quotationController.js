@@ -140,7 +140,7 @@ const getAllQuotations = async (req, res) => {
     const quotationsQuery = `
       SELECT q.id, q.quote_no, q.subject, q.customer_id, q.agent_id, q.address, 
              q.origin, q.destination, q.actual_weight, q.volume_weight, 
-             q.packages_count, q.created_by, q.created_at, q.updated_at
+             q.packages_count, q.created_by, q.status, q.created_at, q.updated_at
       FROM courier_export_quotations q
       ORDER BY q.created_at DESC
     `;
