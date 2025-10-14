@@ -6,7 +6,8 @@ import {
   resetQuotationState,
   updateQuotation,
 } from "@/store/slices/quotationSlice";
-import { fetchCustomers, fetchCustomerById } from "@/store/slices/customerSlice";
+import { fetchCustomers, fetchCustomerById, clearSelectedCustomer  } from "@/store/slices/customerSlice";
+import { getAgents } from "@/store/slices/agentSlice";
 
 const Quotation = ({ existingQuotation = null, onClose }) => {
   const dispatch = useDispatch();
@@ -17,11 +18,17 @@ const Quotation = ({ existingQuotation = null, onClose }) => {
     (state) => state.quotation || {}
   );
   const { user } = useSelector((state) => state.auth || {});
+  const { agents = [] } = useSelector((state) => state.agents || {});
+
 
   const isEditMode = !!existingQuotation;
   const [mounted, setMounted] = useState(false);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const [filteredAgents, setFilteredAgents] = useState([]);
+const [showAgentSuggestions, setShowAgentSuggestions] = useState(false);
+
 
   useEffect(() => setMounted(true), []);
 
@@ -45,7 +52,9 @@ const Quotation = ({ existingQuotation = null, onClose }) => {
   // Fetch customers on mount
   useEffect(() => {
     if (!mounted) return;
+    dispatch(clearSelectedCustomer()); 
     dispatch(fetchCustomers());
+    dispatch(getAgents());
     setFormData((prev) => ({
       ...prev,
       created_by: user?.id || "",
@@ -98,6 +107,28 @@ const Quotation = ({ existingQuotation = null, onClose }) => {
       }
     }
   }, [existingQuotation, user, dispatch]);
+
+   // ✅ Clear form when creating a new quotation
+  useEffect(() => {
+    if (mounted && !isEditMode) {
+      setFormData({
+        quote_no: "",
+        subject: "",
+        customer_id: "",
+        customer_name: "",
+        agent_id: "",
+        address: "",
+        origin: "",
+        destination: "",
+        actual_weight: 0,
+        created_by: user?.id || "",
+        created_by_name: user?.name || "Admin",
+        packages: [{ length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 }],
+        charges: [{ charge_name: "", type: "", amount: 0, description: "" }],
+      });
+      dispatch(clearSelectedCustomer());
+    }
+  }, [isEditMode, mounted, dispatch, user]);
 
   // Sync selected customer
   useEffect(() => {
@@ -252,7 +283,54 @@ const Quotation = ({ existingQuotation = null, onClose }) => {
           )}
         </div>
 
-        <input type="text" name="agent_id" value={formData.agent_id} onChange={handleChange} placeholder="Agent ID" className="form-input" />
+        {/* <input type="text" name="agent_id" value={formData.agent_id} onChange={handleChange} placeholder="Agent ID" className="form-input" /> */}
+        <div className="relative">
+  <input
+    type="text"
+    name="agent_name"
+    value={formData.agent_name || ""}
+    onChange={(e) => {
+      const value = e.target.value;
+      setFormData((prev) => ({ ...prev, agent_name: value, agent_id: "" }));
+
+      if (value.trim()) {
+        const filtered = agents.filter((a) =>
+          (a.name || "").toLowerCase().includes(value.toLowerCase())
+        );
+        setFilteredAgents(filtered);
+        setShowAgentSuggestions(true);
+      } else {
+        setFilteredAgents([]);
+        setShowAgentSuggestions(false);
+      }
+    }}
+    placeholder="Agent Name"
+    className="form-input"
+    autoComplete="off"
+  />
+  {showAgentSuggestions && filteredAgents.length > 0 && (
+    <ul className="absolute z-10 bg-white border rounded w-full max-h-40 overflow-y-auto shadow">
+      {filteredAgents.map((a) => (
+        <li
+          key={a.id}
+          onClick={() => {
+            setFormData((prev) => ({
+              ...prev,
+              agent_name: a.name,
+              agent_id: a.id,
+            }));
+            setShowAgentSuggestions(false);
+          }}
+          className="p-2 cursor-pointer hover:bg-gray-100"
+        >
+          {a.name}
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
+
         <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Address" className="form-input" />
         <input type="text" name="origin" value={formData.origin} onChange={handleChange} placeholder="Origin" className="form-input" />
         <input type="text" name="destination" value={formData.destination} onChange={handleChange} placeholder="Destination" className="form-input" />

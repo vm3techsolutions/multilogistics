@@ -55,11 +55,17 @@ const customerSlice = createSlice({
     message: null,
   },
   reducers: {
+    // ✅ Reset complete customer state
     resetCustomerState: (state) => {
       state.loading = false;
       state.error = null;
       state.success = false;
       state.message = null;
+      state.selectedCustomer = null;
+    },
+
+    // ✅ Clear only selected customer (used when creating a new quotation)
+    clearSelectedCustomer: (state) => {
       state.selectedCustomer = null;
     },
   },
@@ -115,5 +121,7 @@ const customerSlice = createSlice({
   },
 });
 
-export const { resetCustomerState } = customerSlice.actions;
+// ✅ Export both actions
+export const { resetCustomerState, clearSelectedCustomer } = customerSlice.actions;
+
 export default customerSlice.reducer;

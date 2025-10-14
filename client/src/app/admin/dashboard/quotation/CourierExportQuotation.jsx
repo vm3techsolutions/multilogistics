@@ -54,7 +54,7 @@ export default function Quotation() {
   // Fetch quotations
   useEffect(() => {
     dispatch(getAllQuotations());
-  }, [dispatch, success]);
+  }, [dispatch]);
 
   // Fetch customers when typing
   useEffect(() => {
