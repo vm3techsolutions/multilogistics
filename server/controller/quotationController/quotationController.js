@@ -43,6 +43,46 @@ const createQuotation = async (req, res) => {
       charges = []   // array of { charge_name, type, amount, description }
     } = req.body;
 
+    // ✅ Validation for required fields
+    const errors = [];
+    
+    if (!subject || subject.trim() === '') {
+      errors.push('Subject is required');
+    }
+    
+    if (!customer_id || sanitizeNumber(customer_id) === null) {
+      errors.push('Customer ID is required and must be a valid number');
+    }
+    
+    if (!agent_id || sanitizeNumber(agent_id) === null) {
+      errors.push('Agent ID is required and must be a valid number');
+    }
+    
+    if (!address || address.trim() === '') {
+      errors.push('Address is required');
+    }
+    
+    if (!origin || origin.trim() === '') {
+      errors.push('Origin is required');
+    }
+    
+    if (!destination || destination.trim() === '') {
+      errors.push('Destination is required');
+    }
+    
+    if (!actual_weight || sanitizeNumber(actual_weight) === null || sanitizeNumber(actual_weight) <= 0) {
+      errors.push('Actual weight is required and must be a positive number');
+    }
+
+    // Return validation errors if any
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors
+      });
+    }
+
     // Auto-calculate volume weight
     const volumeFactor = 5000; // adjust as needed
     let totalVolumeWeight = packages.reduce((sum, pkg) => {

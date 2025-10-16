@@ -196,22 +196,23 @@ const QuotationList = () => {
 
                         {/* Approve / Reject / Send Email */}
                         <td className="border p-2 text-center">
-                          <button
-                            disabled={q.status === "approved"}
-                            onClick={() => handleStatusChange(q.id, "approved")}
-                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            disabled={q.status === "rejected"}
-                            onClick={() => handleStatusChange(q.id, "rejected")}
-                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                          >
-                            Reject
-                          </button>
+                          {/* Show Approve/Reject only if status is pending */}
+                          {q.status !== "draft" && (
+                            <>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "approved")}
+                                className="text-green-600 hover:text-green-800 text-sm font-semibold mr-2"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "rejected")}
+                                className="text-red-600 hover:text-red-800 text-sm font-semibold mr-2"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
 
                           <button
                             disabled={q.status !== "draft"} // ✅ only allow if draft
