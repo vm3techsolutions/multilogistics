@@ -143,6 +143,7 @@ const triggerQuotationEmail = async (req, res) => {
   const client = await pool.connect();
   try {
     const quotationId = sanitizeNumber(req.params.id);
+    const adminId = req.user?.id; // from JWT middleware
     if (!quotationId) return res.status(400).json({ success: false, message: "Invalid quotation ID" });
 
     // Fetch quotation with packages and charges
@@ -159,6 +160,14 @@ const triggerQuotationEmail = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ success: false, message: "Quotation not found" });
 
     const quotation = rows[0];
+
+    if (quotation.status !== "draft") {
+      return res.status(400).json({
+        success: false,
+        message: "Only draft quotations can be emailed.",
+      });
+    }
+
 
     // Fetch packages
     const { rows: packages } = await client.query(
@@ -180,6 +189,13 @@ const triggerQuotationEmail = async (req, res) => {
 
     // Send email asynchronously
     await sendQuotationMail(quotation.customer_email, quotation.agent_email, quotation);
+
+    await client.query(
+      `UPDATE courier_export_quotations 
+       SET status='pending', status_updated_by=$1, status_updated_at=NOW()
+       WHERE id=$2`,
+      [adminId ,quotationId]
+    );
 
     res.json({
       success: true,

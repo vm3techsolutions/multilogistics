@@ -92,9 +92,9 @@ const QuotationList = () => {
   });
 
   // ✅ Pagination logic
-const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
-const startIndex = (currentPage - 1) * itemsPerPage;
-const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage);
+  const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="max-w-full mx-auto">
@@ -169,13 +169,12 @@ const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + it
                         {/* Status Column */}
                         <td className="border p-2 capitalize text-center">
                           <span
-                            className={`px-2 py-1 rounded text-sm font-medium ${
-                              q.status === "approved"
+                            className={`px-2 py-1 rounded text-sm font-medium ${q.status === "approved"
                                 ? "bg-green-100 text-green-700"
                                 : q.status === "rejected"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
                           >
                             {q.status || "pending"}
                           </span>
@@ -200,38 +199,40 @@ const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + it
                           <button
                             disabled={q.status === "approved"}
                             onClick={() => handleStatusChange(q.id, "approved")}
-                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${
-                              q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
+                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
                           >
                             Approve
                           </button>
                           <button
                             disabled={q.status === "rejected"}
                             onClick={() => handleStatusChange(q.id, "rejected")}
-                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${
-                              q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
+                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
                           >
                             Reject
                           </button>
 
-                          {q.status === "approved" && (
-                            <button
-                              onClick={async () => {
-                                if (!window.confirm("Send quotation email?")) return;
-                                try {
-                                  await dispatch(triggerQuotationEmail(q.id)).unwrap();
-                                  toast.success("Quotation email sent successfully 📧");
-                                } catch (err) {
-                                  toast.error(err.message || "Failed to send email ❌");
-                                }
-                              }}
-                              className="px-2 py-1 text-sm font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                            >
-                              Send Email
-                            </button>
-                          )}
+                          <button
+                            disabled={q.status !== "draft"} // ✅ only allow if draft
+                            onClick={async () => {
+                              if (!window.confirm("Send quotation email?")) return;
+                              try {
+                                await dispatch(triggerQuotationEmail(q.id)).unwrap();
+                                toast.success("Quotation email sent successfully 📧");
+                                dispatch(getAllQuotations()); // refresh list
+                              } catch (err) {
+                                toast.error(err.message || "Failed to send email ❌");
+                              }
+                            }}
+                            className={`px-2 py-1 text-sm font-semibold rounded ml-2 ${q.status === "draft"
+                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                              }`}
+                          >
+                            {q.status === "draft" ? "Send Email" : "Already Sent"}
+                          </button>
+
                         </td>
                       </tr>
                     ))}
@@ -239,49 +240,46 @@ const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + it
                 </table>
 
                 {/* Pagination Controls */}
-{!loading && filteredQuotations.length > itemsPerPage && (
-  <div className="flex justify-center items-center mt-6 space-x-2">
-    <button
-      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-      disabled={currentPage === 1}
-      className={`px-3 py-1 rounded border text-sm ${
-        currentPage === 1
-          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
-      }`}
-    >
-      Previous
-    </button>
+                {!loading && filteredQuotations.length > itemsPerPage && (
+                  <div className="flex justify-center items-center mt-6 space-x-2">
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded border text-sm ${currentPage === 1
+                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+                        }`}
+                    >
+                      Previous
+                    </button>
 
-    {[...Array(totalPages)].map((_, index) => (
-      <button
-        key={index}
-        onClick={() => setCurrentPage(index + 1)}
-        className={`px-3 py-1 rounded border text-sm ${
-          currentPage === index + 1
-            ? "bg-blue-600 text-white border-blue-600"
-            : "hover:bg-blue-50 border-gray-300"
-        }`}
-      >
-        {index + 1}
-      </button>
-    ))}
+                    {[...Array(totalPages)].map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentPage(index + 1)}
+                        className={`px-3 py-1 rounded border text-sm ${currentPage === index + 1
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "hover:bg-blue-50 border-gray-300"
+                          }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
 
-    <button
-      onClick={() =>
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-      }
-      disabled={currentPage === totalPages}
-      className={`px-3 py-1 rounded border text-sm ${
-        currentPage === totalPages
-          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
-      }`}
-    >
-      Next
-    </button>
-  </div>
-)}
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded border text-sm ${currentPage === totalPages
+                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+                        }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
 
               </div>
             )}
@@ -338,8 +336,8 @@ const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + it
                                       {k.toLowerCase() === "weight"
                                         ? `${v} kg`
                                         : k.toLowerCase() === "amount"
-                                        ? `₹${v}`
-                                        : v}
+                                          ? `₹${v}`
+                                          : v}
                                     </div>
                                   ))}
                                 </div>
@@ -356,8 +354,8 @@ const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + it
                                 {k.toLowerCase() === "weight"
                                   ? `${v} kg`
                                   : k.toLowerCase() === "amount"
-                                  ? `₹${v}`
-                                  : v}
+                                    ? `₹${v}`
+                                    : v}
                               </div>
                             ))}
                           </div>

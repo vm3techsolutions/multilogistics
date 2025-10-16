@@ -5,15 +5,11 @@ const { sendEmail } = require("../config/sendEmail");
  * Send quotation email to customer and company
  * @param {string} customerEmail
  * @param {string} companyEmail
- * @param {object} quotation - { quote_no, subject, origin, destination, actual_weight, status, packages, charges }
+ * @param {object} quotation - { quote_no, subject, origin, destination, actual_weight, packages, charges }
  */
 const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
-  const subject = `Quotation ${quotation.quote_no} - ${quotation.status.toUpperCase()}`;
-  const statusColor = quotation.status === "approved" ? "#28a745" : "#dc3545";
-  const messageTitle =
-    quotation.status === "approved"
-      ? "Your quotation has been approved!"
-      : "Your quotation has been rejected.";
+  const subject = `Quotation ${quotation.quote_no} - Ready for Approval`;
+  const messageTitle = "Your quotation is ready, please approve!";
 
   // Packages table HTML
   const packagesHtml = quotation.packages && quotation.packages.length > 0
@@ -57,7 +53,7 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:10px; padding:20px;">
-      <h2 style="color:#003366;">Courier Export Quotation Update</h2>
+      <h2 style="color:#003366;">Courier Export Quotation</h2>
       <p>${messageTitle}</p>
       <table style="width:100%; border-collapse:collapse; margin-top:20px;">
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Quotation No:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.quote_no}</td></tr>
@@ -65,12 +61,11 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Origin:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.origin || "N/A"}</td></tr>
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Destination:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.destination || "N/A"}</td></tr>
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Actual Weight:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.actual_weight || 0} kg</td></tr>
-        <tr><td style="padding:8px; border:1px solid #eee;"><b>Status:</b></td><td style="padding:8px; border:1px solid #eee; color:${statusColor}; font-weight:bold;">${quotation.status.toUpperCase()}</td></tr>
       </table>
       ${packagesHtml}
       ${chargesHtml}
       <p style="margin-top:25px; font-size:14px; color:#555;">
-        For further details, contact our support team.
+        Please review the quotation details and approve if everything looks correct.
       </p>
       <p style="margin-top:20px; font-size:14px; color:#777;">
         Thank you for choosing <b>Your Logistics Partner</b>.<br/>
