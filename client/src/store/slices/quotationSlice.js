@@ -10,7 +10,9 @@ export const createQuotation = createAsyncThunk(
       const response = await axiosInstance.post("/createQuotation", formData);
       return response.data; // { success, message, data: {...} }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Something went wrong" });
+      return rejectWithValue(
+        err.response?.data || { message: "Something went wrong" }
+      );
     }
   }
 );
@@ -23,7 +25,9 @@ export const getAllQuotations = createAsyncThunk(
       const response = await axiosInstance.get("/getAllQuotations");
       return response.data; // { success, message, data: [...] }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Failed to fetch quotations" });
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to fetch quotations" }
+      );
     }
   }
 );
@@ -36,7 +40,9 @@ export const getQuotationById = createAsyncThunk(
       const response = await axiosInstance.get(`/getQuotationById/${id}`);
       return response.data; // { success, message, data: {...} }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Failed to fetch the quotation" });
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to fetch the quotation" }
+      );
     }
   }
 );
@@ -49,7 +55,9 @@ export const updateQuotation = createAsyncThunk(
       const response = await axiosInstance.put(`/updateQuotation/${id}`, data);
       return response.data; // { success, message, data: {...} }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Failed to update quotation" });
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to update quotation" }
+      );
     }
   }
 );
@@ -59,10 +67,14 @@ export const updateQuotationStatus = createAsyncThunk(
   "quotation/updateQuotationStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/approveQuotation/${id}`, { status });
+      const response = await axiosInstance.put(`/approveQuotation/${id}`, {
+        status,
+      });
       return response.data; // { success, message, data: { quotationId, status } }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Failed to update status" });
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to update status" }
+      );
     }
   }
 );
@@ -74,11 +86,12 @@ export const triggerQuotationEmail = createAsyncThunk(
       const response = await axiosInstance.post(`/quotation/send-email/${id}`);
       return response.data; // { success, message, data: { quotationId } }
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: "Failed to trigger email" });
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to trigger email" }
+      );
     }
   }
 );
-
 
 const quotationSlice = createSlice({
   name: "quotation",
@@ -90,6 +103,7 @@ const quotationSlice = createSlice({
     error: null,
     lastCreated: null,
     lastUpdated: null,
+    lastEmailMessage: null,
   },
   reducers: {
     resetQuotationState: (state) => {
@@ -147,7 +161,8 @@ const quotationSlice = createSlice({
       })
       .addCase(getQuotationById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch the quotation";
+        state.error =
+          action.payload?.message || "Failed to fetch the quotation";
       })
 
       // Update quotation
@@ -162,7 +177,9 @@ const quotationSlice = createSlice({
         state.lastUpdated = action.payload.data || null;
 
         // Update in quotations list if exists
-        const index = state.quotations.findIndex(q => q.id === action.payload.data?.id);
+        const index = state.quotations.findIndex(
+          (q) => q.id === action.payload.data?.id
+        );
         if (index !== -1) {
           state.quotations[index] = action.payload.data;
         }
@@ -183,15 +200,17 @@ const quotationSlice = createSlice({
         state.success = true;
         const { quotationId, status } = action.payload.data;
         // Update local quotation list
-        const index = state.quotations.findIndex(q => q.id === quotationId);
+        const index = state.quotations.findIndex((q) => q.id === quotationId);
         if (index !== -1) {
           state.quotations[index].status = status;
         }
       })
       .addCase(updateQuotationStatus.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to update quotation status";
+        state.error =
+          action.payload?.message || "Failed to update quotation status";
       })
+      // Trigger quotation email
       // Trigger quotation email
       .addCase(triggerQuotationEmail.pending, (state) => {
         state.loading = true;
@@ -200,13 +219,21 @@ const quotationSlice = createSlice({
       .addCase(triggerQuotationEmail.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
+        state.lastEmailMessage = action.payload.message || null;
+
+        // Update the quotation status locally
+        const quotationId = action.payload.data?.quotationId;
+        if (quotationId) {
+          const index = state.quotations.findIndex((q) => q.id === quotationId);
+          if (index !== -1) {
+            state.quotations[index].status = "pending"; // after sending email
+          }
+        }
       })
       .addCase(triggerQuotationEmail.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "Failed to trigger email";
       });
-
-
   },
 });
 
