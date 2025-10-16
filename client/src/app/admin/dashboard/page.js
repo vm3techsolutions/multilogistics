@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import SidebarAdmin from "@/components/SidebarAdmin";
 
 // Import section components
-import Overview from "./overview/Overview";
-import Orders from "./orders/Orders";
-import CustDetails from "./customer-details/CustDetails";
-import Agents from "./agents/Agents";
-import QuotationList from "./quotation/QuotationList";
+import Overview from "../overview/Overview";
+import Orders from "../orders/Orders";
+import CustDetails from "../customers/CustDetails";
+import Agents from "../agents/Agents";
+import QuotationList from "../quotation/QuotationList";
 
 export default function DashboardPage() {
   const { isAuthenticated, username, loading } = useSelector(

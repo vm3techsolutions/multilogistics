@@ -4,11 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   getAllQuotations,
   updateQuotationStatus,
-  triggerQuotationEmail
+  triggerQuotationEmail,
 } from "@/store/slices/quotationSlice";
 import { fetchCustomerById } from "@/store/slices/customerSlice";
 import Quotation from "./Quotation";
 import { Edit, Eye, Trash2, Search } from "lucide-react";
+import { toast } from "react-toastify"; // ✅ Import toast
+import "react-toastify/dist/ReactToastify.css"; // ✅ Import styles
 
 const QuotationList = () => {
   const dispatch = useDispatch();
@@ -22,10 +24,16 @@ const QuotationList = () => {
   const [customerMap, setCustomerMap] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+
+  // Fetch quotations initially
   useEffect(() => {
     dispatch(getAllQuotations());
   }, [dispatch]);
 
+  // Fetch customer name
   const getCustomerName = async (id) => {
     if (!id) return "N/A";
     if (customerMap[id]) return customerMap[id];
@@ -40,6 +48,7 @@ const QuotationList = () => {
     }
   };
 
+  // Populate customer names
   useEffect(() => {
     quotations.forEach((q) => {
       if (q.customer_id && !customerMap[q.customer_id]) {
@@ -58,19 +67,21 @@ const QuotationList = () => {
   const handleCloseEdit = () => setEditingQuotation(null);
   const handleCloseView = () => setViewQuotation(null);
 
+  // ✅ Handle Approve/Reject status
   const handleStatusChange = async (id, status) => {
     if (!window.confirm(`Are you sure you want to ${status} this quotation?`))
       return;
     try {
       const result = await dispatch(updateQuotationStatus({ id, status })).unwrap();
-      toast.success(result.message || `Quotation ${status} successfully`);
-      dispatch(getAllQuotations()); // refresh
+      toast.success(result.message || `Quotation ${status} successfully ✅`);
+      dispatch(getAllQuotations()); // refresh list
     } catch (err) {
       console.error("Status update failed:", err);
-      toast.error(err.message || "Failed to update status");
+      toast.error(err.message || "Failed to update status ❌");
     }
   };
 
+  // ✅ Filter quotations by search
   const filteredQuotations = quotations.filter((q) => {
     const customerName = customerMap[q.customer_id] || "";
     return (
@@ -79,6 +90,11 @@ const QuotationList = () => {
       customerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+
+  // ✅ Pagination logic
+const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
+const startIndex = (currentPage - 1) * itemsPerPage;
+const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="max-w-full mx-auto">
@@ -138,7 +154,9 @@ const QuotationList = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredQuotations.map((q) => (
+                    {/* {filteredQuotations.map((q) => ( */}
+                    {paginatedQuotations.map((q) => (
+
                       <tr key={q.id} className="text-gray-700 hover:bg-gray-50 transition">
                         <td className="border p-2">{q.quote_no}</td>
                         <td className="border p-2">{q.subject}</td>
@@ -148,21 +166,22 @@ const QuotationList = () => {
                         <td className="border p-2">{q.origin}</td>
                         <td className="border p-2">{q.destination}</td>
 
-                        {/* ✅ Status Column */}
+                        {/* Status Column */}
                         <td className="border p-2 capitalize text-center">
                           <span
-                            className={`px-2 py-1 rounded text-sm font-medium ${q.status === "approved"
+                            className={`px-2 py-1 rounded text-sm font-medium ${
+                              q.status === "approved"
                                 ? "bg-green-100 text-green-700"
                                 : q.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                              }`}
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
                           >
                             {q.status || "pending"}
                           </span>
                         </td>
 
-                        {/* ✅ Edit / View Actions */}
+                        {/* Edit / View Actions */}
                         <td className="border p-2 flex space-x-3 justify-center">
                           <Edit
                             className="cursor-pointer text-blue-600"
@@ -174,41 +193,38 @@ const QuotationList = () => {
                             size={20}
                             onClick={() => handleView(q)}
                           />
-                          {/* <Trash2
-                            className="cursor-pointer text-red-600"
-                            size={20}
-                            onClick={() => handleDelete(q.id)}
-                          /> */}
                         </td>
 
-                        {/* ✅ Approve / Reject Actions */}
+                        {/* Approve / Reject / Send Email */}
                         <td className="border p-2 text-center">
                           <button
                             disabled={q.status === "approved"}
                             onClick={() => handleStatusChange(q.id, "approved")}
-                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
+                            className={`text-green-600 hover:text-green-800 text-sm font-semibold mr-2 ${
+                              q.status === "approved" ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           >
                             Approve
                           </button>
                           <button
                             disabled={q.status === "rejected"}
                             onClick={() => handleStatusChange(q.id, "rejected")}
-                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
+                            className={`text-red-600 hover:text-red-800 text-sm font-semibold ${
+                              q.status === "rejected" ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
                           >
                             Reject
                           </button>
-                          {/* Send Email button only for approved quotations */}
+
                           {q.status === "approved" && (
                             <button
                               onClick={async () => {
                                 if (!window.confirm("Send quotation email?")) return;
                                 try {
                                   await dispatch(triggerQuotationEmail(q.id)).unwrap();
-                                  toast.success("Quotation email triggered successfully");
+                                  toast.success("Quotation email sent successfully 📧");
                                 } catch (err) {
-                                  toast.error(err.message || "Failed to send email");
+                                  toast.error(err.message || "Failed to send email ❌");
                                 }
                               }}
                               className="px-2 py-1 text-sm font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition"
@@ -221,12 +237,58 @@ const QuotationList = () => {
                     ))}
                   </tbody>
                 </table>
+
+                {/* Pagination Controls */}
+{!loading && filteredQuotations.length > itemsPerPage && (
+  <div className="flex justify-center items-center mt-6 space-x-2">
+    <button
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      className={`px-3 py-1 rounded border text-sm ${
+        currentPage === 1
+          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+      }`}
+    >
+      Previous
+    </button>
+
+    {[...Array(totalPages)].map((_, index) => (
+      <button
+        key={index}
+        onClick={() => setCurrentPage(index + 1)}
+        className={`px-3 py-1 rounded border text-sm ${
+          currentPage === index + 1
+            ? "bg-blue-600 text-white border-blue-600"
+            : "hover:bg-blue-50 border-gray-300"
+        }`}
+      >
+        {index + 1}
+      </button>
+    ))}
+
+    <button
+      onClick={() =>
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+      }
+      disabled={currentPage === totalPages}
+      className={`px-3 py-1 rounded border text-sm ${
+        currentPage === totalPages
+          ? "text-gray-400 border-gray-200 cursor-not-allowed"
+          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
+
               </div>
             )}
           </>
         )}
 
-        {/* Edit Quotation Modal */}
+        {/* Edit Modal */}
         {editingQuotation && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
             <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-[90%] overflow-y-auto relative">
@@ -244,7 +306,7 @@ const QuotationList = () => {
           </div>
         )}
 
-        {/* View Quotation Modal */}
+        {/* View Modal */}
         {viewQuotation && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
             <div className="bg-white rounded-lg shadow-lg p-6 w-2/3 max-h-[80%] overflow-y-auto relative">
@@ -276,8 +338,8 @@ const QuotationList = () => {
                                       {k.toLowerCase() === "weight"
                                         ? `${v} kg`
                                         : k.toLowerCase() === "amount"
-                                          ? `₹${v}`
-                                          : v}
+                                        ? `₹${v}`
+                                        : v}
                                     </div>
                                   ))}
                                 </div>
@@ -294,8 +356,8 @@ const QuotationList = () => {
                                 {k.toLowerCase() === "weight"
                                   ? `${v} kg`
                                   : k.toLowerCase() === "amount"
-                                    ? `₹${v}`
-                                    : v}
+                                  ? `₹${v}`
+                                  : v}
                               </div>
                             ))}
                           </div>
