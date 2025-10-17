@@ -1,13 +1,16 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourierExports, setPage } from "@/store/slices/courierExportSlice";
+import CreateCourierExport from "./CreateCourierExport";
 
 export default function CourierExports() {
   const dispatch = useDispatch();
   const { list = [], loading, error, currentPage = 1, perPage = 5 } = useSelector(
     (state) => state.courierExports || {}
   );
+
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCourierExports());
@@ -20,7 +23,15 @@ export default function CourierExports() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 primaryText">Courier Exports</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold primaryText">Courier Exports</h2>
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          + Create Export
+        </button>
+      </div>
 
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
@@ -51,7 +62,9 @@ export default function CourierExports() {
                   <td className="border p-2">{exp.awb_number}</td>
                   <td className="border p-2">{exp.shipper_name}</td>
                   <td className="border p-2">{exp.consignee_name}</td>
-                  <td className="border p-2">{new Date(exp.booking_date).toLocaleDateString()}</td>
+                  <td className="border p-2">
+                    {new Date(exp.booking_date).toLocaleDateString()}
+                  </td>
                   <td className="border p-2">{exp.document_type}</td>
                   <td className="border p-2">{exp.items?.length || 0}</td>
                   <td className="border p-2">{exp.amount}</td>
@@ -82,6 +95,21 @@ export default function CourierExports() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {/* Create Export Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-4xl p-6 relative">
+            <button
+              onClick={() => setShowForm(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ✕
+            </button>
+            <CreateCourierExport onClose={() => setShowForm(false)} />
+          </div>
         </div>
       )}
     </div>

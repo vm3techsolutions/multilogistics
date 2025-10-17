@@ -260,12 +260,27 @@ const QuotationList = () => {
 
                           {/* ✅ Create Export Button — after approval */}
                           {q.status === "approved" && (
-                            <button
-                              onClick={() => handleCreateExport(q)}
-                              className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-green-600 text-white hover:bg-green-700"
-                            >
-                              Create Export
-                            </button>
+                            // <button
+                            //   onClick={() => handleCreateExport(q)}
+                            //   className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-green-600 text-white hover:bg-green-700"
+                            // >
+                            //   Create Export
+                            // </button>
+
+                             <>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "approved")}
+                                className="text-green-600 hover:text-green-800 text-sm font-semibold mr-2"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "rejected")}
+                                className="text-red-600 hover:text-red-800 text-sm font-semibold mr-2"
+                              >
+                                Reject
+                              </button>
+                            </>
                           )}
 
                           {/* ❌ Rejected Label */}
