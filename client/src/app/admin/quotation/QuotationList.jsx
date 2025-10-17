@@ -8,9 +8,9 @@ import {
 } from "@/store/slices/quotationSlice";
 import { fetchCustomerById } from "@/store/slices/customerSlice";
 import Quotation from "./Quotation";
-import { Edit, Eye, Trash2, Search } from "lucide-react";
-import { toast } from "react-toastify"; // ✅ Import toast
-import "react-toastify/dist/ReactToastify.css"; // ✅ Import styles
+import { Edit, Eye, Search } from "lucide-react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const QuotationList = () => {
   const dispatch = useDispatch();
@@ -23,10 +23,8 @@ const QuotationList = () => {
   const [viewQuotation, setViewQuotation] = useState(null);
   const [customerMap, setCustomerMap] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
 
   // Fetch quotations initially
   useEffect(() => {
@@ -59,11 +57,6 @@ const QuotationList = () => {
 
   const handleEdit = (quotation) => setEditingQuotation(quotation);
   const handleView = (quotation) => setViewQuotation(quotation);
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this quotation?")) {
-      console.log("Delete quotation ID:", id);
-    }
-  };
   const handleCloseEdit = () => setEditingQuotation(null);
   const handleCloseView = () => setViewQuotation(null);
 
@@ -74,12 +67,37 @@ const QuotationList = () => {
     try {
       const result = await dispatch(updateQuotationStatus({ id, status })).unwrap();
       toast.success(result.message || `Quotation ${status} successfully ✅`);
-      dispatch(getAllQuotations()); // refresh list
+      dispatch(getAllQuotations());
     } catch (err) {
       console.error("Status update failed:", err);
       toast.error(err.message || "Failed to update status ❌");
     }
   };
+
+  // ✅ Handle Email Sending
+  const handleSendEmail = async (q) => {
+    if (!window.confirm("Send quotation email?")) return;
+
+    try {
+      // Trigger the email via Redux action
+      const response = await dispatch(triggerQuotationEmail(q.id)).unwrap();
+
+      if (response?.success) {
+        toast.success(response?.message || "Quotation email sent successfully 📧");
+
+        // Optimistically update the quotation status locally
+        dispatch(getAllQuotations()); // refresh the list to reflect any backend changes
+      } else {
+        toast.warn(response.message || "Email might not have been sent ⚠️");
+      }
+    } catch (err) {
+      console.error("Email send failed:", err);
+      const errorMsg =
+        err?.response?.data?.message || err?.message || "Failed to send email ❌";
+      toast.error(errorMsg);
+    }
+  };
+
 
   // ✅ Filter quotations by search
   const filteredQuotations = quotations.filter((q) => {
@@ -94,7 +112,10 @@ const QuotationList = () => {
   // ✅ Pagination logic
   const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedQuotations = filteredQuotations.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   return (
     <div className="max-w-full mx-auto">
@@ -136,7 +157,9 @@ const QuotationList = () => {
           <>
             {error && <p className="text-red-500">{error}</p>}
             {loading && <p>Loading...</p>}
-            {!loading && filteredQuotations.length === 0 && <p>No quotations found.</p>}
+            {!loading && filteredQuotations.length === 0 && (
+              <p>No quotations found.</p>
+            )}
 
             {filteredQuotations.length > 0 && (
               <div className="overflow-x-auto">
@@ -154,10 +177,11 @@ const QuotationList = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* {filteredQuotations.map((q) => ( */}
                     {paginatedQuotations.map((q) => (
-
-                      <tr key={q.id} className="text-gray-700 hover:bg-gray-50 transition">
+                      <tr
+                        key={q.id}
+                        className="text-gray-700 hover:bg-gray-50 transition"
+                      >
                         <td className="border p-2">{q.quote_no}</td>
                         <td className="border p-2">{q.subject}</td>
                         <td className="border p-2">
@@ -170,10 +194,10 @@ const QuotationList = () => {
                         <td className="border p-2 capitalize text-center">
                           <span
                             className={`px-2 py-1 rounded text-sm font-medium ${q.status === "approved"
-                                ? "bg-green-100 text-green-700"
-                                : q.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                              ? "bg-green-100 text-green-700"
+                              : q.status === "rejected"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
                               }`}
                           >
                             {q.status || "pending"}
@@ -195,8 +219,7 @@ const QuotationList = () => {
                         </td>
 
                         {/* Approve / Reject / Send Email */}
-                        <td className="border p-2 text-center">
-                          {/* Show Approve/Reject only if status is pending */}
+                        {/* <td className="border p-2 text-center">
                           {q.status !== "draft" && (
                             <>
                               <button
@@ -215,17 +238,8 @@ const QuotationList = () => {
                           )}
 
                           <button
-                            disabled={q.status !== "draft"} // ✅ only allow if draft
-                            onClick={async () => {
-                              if (!window.confirm("Send quotation email?")) return;
-                              try {
-                                await dispatch(triggerQuotationEmail(q.id)).unwrap();
-                                toast.success("Quotation email sent successfully 📧");
-                                dispatch(getAllQuotations()); // refresh list
-                              } catch (err) {
-                                toast.error(err.message || "Failed to send email ❌");
-                              }
-                            }}
+                            disabled={q.status !== "draft"}
+                            onClick={() => handleSendEmail(q)}
                             className={`px-2 py-1 text-sm font-semibold rounded ml-2 ${q.status === "draft"
                                 ? "bg-blue-600 text-white hover:bg-blue-700"
                                 : "bg-gray-300 text-gray-600 cursor-not-allowed"
@@ -234,7 +248,60 @@ const QuotationList = () => {
                             {q.status === "draft" ? "Send Email" : "Already Sent"}
                           </button>
 
-                        </td>
+
+
+                        </td> */}
+
+
+                       <td className="border p-2 text-center">
+  {/* Send Email Button */}
+  {(q.status === "draft" || (q.status === "pending" )) && (
+    <button
+      onClick={() => handleSendEmail(q)}
+      className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-blue-600 text-white hover:bg-blue-700"
+    >
+      Send Email
+    </button>
+  )}
+
+  {/* Approve / Reject Buttons */}
+  {q.status === "pending"  && (
+    <>
+      <button
+        onClick={() => handleStatusChange(q.id, "approved")}
+        className="text-green-600 hover:text-green-800 text-sm font-semibold mr-2"
+      >
+        Approve
+      </button>
+      <button
+        onClick={() => handleStatusChange(q.id, "rejected")}
+        className="text-red-600 hover:text-red-800 text-sm font-semibold mr-2"
+      >
+        Reject
+      </button>
+    </>
+  )}
+
+  {/* Create Export Button */}
+  {q.status === "approved" && (
+    <button
+      onClick={() => handleCreateExport(q)}
+      className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-green-600 text-white hover:bg-green-700"
+    >
+      Create Export
+    </button>
+  )}
+
+  {/* Rejected Label */}
+  {q.status === "rejected" && (
+    <span className="text-red-600 font-semibold">Rejected</span>
+  )}
+</td>
+
+
+
+
+
                       </tr>
                     ))}
                   </tbody>
@@ -244,11 +311,13 @@ const QuotationList = () => {
                 {!loading && filteredQuotations.length > itemsPerPage && (
                   <div className="flex justify-center items-center mt-6 space-x-2">
                     <button
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       className={`px-3 py-1 rounded border text-sm ${currentPage === 1
-                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                        : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
                         }`}
                     >
                       Previous
@@ -259,8 +328,8 @@ const QuotationList = () => {
                         key={index}
                         onClick={() => setCurrentPage(index + 1)}
                         className={`px-3 py-1 rounded border text-sm ${currentPage === index + 1
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "hover:bg-blue-50 border-gray-300"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "hover:bg-blue-50 border-gray-300"
                           }`}
                       >
                         {index + 1}
@@ -269,19 +338,20 @@ const QuotationList = () => {
 
                     <button
                       onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                        setCurrentPage((prev) =>
+                          Math.min(prev + 1, totalPages)
+                        )
                       }
                       disabled={currentPage === totalPages}
                       className={`px-3 py-1 rounded border text-sm ${currentPage === totalPages
-                          ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                          : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
+                        ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                        : "hover:bg-blue-600 hover:text-white border-blue-600 text-blue-600"
                         }`}
                     >
                       Next
                     </button>
                   </div>
                 )}
-
               </div>
             )}
           </>
@@ -292,7 +362,9 @@ const QuotationList = () => {
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
             <div className="bg-white rounded-lg shadow-lg p-6 w-3/4 h-[90%] overflow-y-auto relative">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold primaryText">Edit Quotation</h3>
+                <h3 className="text-lg font-semibold primaryText">
+                  Edit Quotation
+                </h3>
                 <button
                   onClick={handleCloseEdit}
                   className="text-gray-600 hover:text-black"
@@ -300,7 +372,10 @@ const QuotationList = () => {
                   ✖
                 </button>
               </div>
-              <Quotation existingQuotation={editingQuotation} onClose={handleCloseEdit} />
+              <Quotation
+                existingQuotation={editingQuotation}
+                onClose={handleCloseEdit}
+              />
             </div>
           </div>
         )}
@@ -310,7 +385,9 @@ const QuotationList = () => {
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-20">
             <div className="bg-white rounded-lg shadow-lg p-6 w-2/3 max-h-[80%] overflow-y-auto relative">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold primaryText">Quotation Details</h3>
+                <h3 className="text-lg font-semibold primaryText">
+                  Quotation Details
+                </h3>
                 <button
                   onClick={handleCloseView}
                   className="text-gray-600 hover:text-black"

@@ -17,7 +17,7 @@ export default function Login() {
     const result = await dispatch(loginUser({ email, password }));
 
     if (loginUser.fulfilled.match(result)) {
-      router.push("/admin/dashboard");
+      router.push("/admin/overview");
     }
   };
 
