@@ -393,45 +393,24 @@ const updateQuotation = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid quotation ID" });
     }
 
-    const {
-      subject,
-      customer_id,
-      agent_id,
-      address,
-      origin,
-      destination,
-      actual_weight,
-      packages,
-      charges  
-    } = req.body;
+    const { packages, charges } = req.body;
+
+    // ✅ Only allow editing packages and charges
+    if (!Array.isArray(packages) && !Array.isArray(charges)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only packages and charges can be updated"
+      });
+    }
 
     await client.query('BEGIN');
 
-    // --- 1. Update only provided fields ---
-    const fields = [];
-    const values = [];
-    let idx = 1;
+    let updatedPackages = false;
+    let updatedCharges = false;
 
-    if (subject !== undefined) { fields.push(`subject=$${idx++}`); values.push(subject); }
-    if (customer_id !== undefined) { fields.push(`customer_id=$${idx++}`); values.push(sanitizeNumber(customer_id)); }
-    if (agent_id !== undefined) { fields.push(`agent_id=$${idx++}`); values.push(sanitizeNumber(agent_id)); }
-    if (address !== undefined) { fields.push(`address=$${idx++}`); values.push(address); }
-    if (origin !== undefined) { fields.push(`origin=$${idx++}`); values.push(origin); }
-    if (destination !== undefined) { fields.push(`destination=$${idx++}`); values.push(destination); }
-    if (actual_weight !== undefined) { fields.push(`actual_weight=$${idx++}`); values.push(sanitizeNumber(actual_weight)); }
-
-    if (fields.length > 0) {
-      fields.push(`updated_at=NOW()`);
-      values.push(quotationId);
-      await client.query(
-        `UPDATE courier_export_quotations SET ${fields.join(", ")} WHERE id=$${idx}`,
-        values
-      );
-    }
-
-    // --- 2. Update packages only if provided ---
+    // --- Update packages if provided ---
     if (Array.isArray(packages)) {
-      // recalc volume + package count
+      // Recalculate volume + package count
       const volumeFactor = 5000;
       const totalVolumeWeight = packages.reduce((sum, pkg) => {
         const l = sanitizeNumber(pkg.length) || 0;
@@ -442,7 +421,7 @@ const updateQuotation = async (req, res) => {
 
       const packages_count = packages.length;
 
-      // delete + insert fresh
+      // Delete existing packages and insert new ones
       await client.query(`DELETE FROM courier_export_quotation_packages WHERE quotation_id=$1`, [quotationId]);
       for (let pkg of packages) {
         if (pkg.length || pkg.width || pkg.height || pkg.weight) {
@@ -460,14 +439,16 @@ const updateQuotation = async (req, res) => {
         }
       }
 
-      // update volume + count in quotation
+      // Update volume + count in quotation
       await client.query(
         `UPDATE courier_export_quotations SET volume_weight=$1, packages_count=$2 WHERE id=$3`,
         [sanitizeNumber(totalVolumeWeight), sanitizeNumber(packages_count), quotationId]
       );
+      
+      updatedPackages = true;
     }
 
-    // --- 3. Update charges only if provided ---
+    // --- Update charges if provided ---
     if (Array.isArray(charges)) {
       await client.query(`DELETE FROM courier_export_quotation_charges WHERE quotation_id=$1`, [quotationId]);
       for (let chg of charges) {
@@ -485,14 +466,30 @@ const updateQuotation = async (req, res) => {
           );
         }
       }
+      updatedCharges = true;
+    }
+
+    // ✅ Set status to 'draft' after editing packages or charges
+    if (updatedPackages || updatedCharges) {
+      await client.query(
+        `UPDATE courier_export_quotations 
+         SET status = 'draft', updated_at = NOW()
+         WHERE id = $1`,
+        [quotationId]
+      );
     }
 
     await client.query('COMMIT');
 
     res.json({
       success: true,
-      message: "Quotation updated successfully",
-      data: { quotationId }
+      message: "Quotation updated successfully and status set to draft",
+      data: { 
+        quotationId, 
+        updatedPackages, 
+        updatedCharges,
+        status: 'draft'
+      }
     });
 
   } catch (error) {
