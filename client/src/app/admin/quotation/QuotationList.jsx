@@ -7,6 +7,7 @@ import {
   triggerQuotationEmail,
 } from "@/store/slices/quotationSlice";
 import { fetchCustomerById } from "@/store/slices/customerSlice";
+import { getAgents } from "@/store/slices/agentSlice";
 import Quotation from "./Quotation";
 import { Edit, Eye, Search } from "lucide-react";
 import { toast } from "react-toastify";
@@ -17,6 +18,7 @@ const QuotationList = () => {
   const { quotations = [], loading, error } = useSelector(
     (state) => state.quotation || {}
   );
+  const { agents = [] } = useSelector((state) => state.agents || {});
 
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -29,7 +31,13 @@ const QuotationList = () => {
   // Fetch quotations initially
   useEffect(() => {
     dispatch(getAllQuotations());
+    dispatch(getAgents());
   }, [dispatch]);
+
+  const getAgentName = (id) => {
+    const agent = agents.find((a) => a.id === id);
+    return agent ? agent.name : "N/A";
+  };
 
   // Fetch customer name
   const getCustomerName = async (id) => {
@@ -218,9 +226,22 @@ const QuotationList = () => {
                           />
                         </td>
 
-                        {/* Approve / Reject / Send Email */}
-                        {/* <td className="border p-2 text-center">
-                          {q.status !== "draft" && (
+
+
+
+                        <td className="border p-2 text-center">
+                          {/* ✅ Send Email Button — shown when draft OR pending (but needs re-email) */}
+                          {(q.status === "draft" || (q.status === "pending" && q.needs_email)) && (
+                            <button
+                              onClick={() => handleSendEmail(q)}
+                              className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                              Send Email
+                            </button>
+                          )}
+
+                          {/* ✅ Approve / Reject Buttons — only if pending and email is already sent */}
+                          {q.status === "pending" && !q.needs_email && (
                             <>
                               <button
                                 onClick={() => handleStatusChange(q.id, "approved")}
@@ -237,66 +258,35 @@ const QuotationList = () => {
                             </>
                           )}
 
-                          <button
-                            disabled={q.status !== "draft"}
-                            onClick={() => handleSendEmail(q)}
-                            className={`px-2 py-1 text-sm font-semibold rounded ml-2 ${q.status === "draft"
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
-                                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                              }`}
-                          >
-                            {q.status === "draft" ? "Send Email" : "Already Sent"}
-                          </button>
+                          {/* ✅ Create Export Button — after approval */}
+                          {q.status === "approved" && (
+                            <button
+                              onClick={() => handleCreateExport(q)}
+                              className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-green-600 text-white hover:bg-green-700"
+                            >
+                              Create Export
+                            </button>
+                          )}
 
+                          {/* ❌ Rejected Label */}
+                          {q.status === "rejected" && (
+                            <>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "approved")}
+                                className="text-green-600 hover:text-green-800 text-sm font-semibold mr-2"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleStatusChange(q.id, "rejected")}
+                                className="text-red-600 hover:text-red-800 text-sm font-semibold mr-2"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
 
-
-                        </td> */}
-
-
-                       <td className="border p-2 text-center">
-  {/* Send Email Button */}
-  {(q.status === "draft" || (q.status === "pending" )) && (
-    <button
-      onClick={() => handleSendEmail(q)}
-      className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-blue-600 text-white hover:bg-blue-700"
-    >
-      Send Email
-    </button>
-  )}
-
-  {/* Approve / Reject Buttons */}
-  {q.status === "pending"  && (
-    <>
-      <button
-        onClick={() => handleStatusChange(q.id, "approved")}
-        className="text-green-600 hover:text-green-800 text-sm font-semibold mr-2"
-      >
-        Approve
-      </button>
-      <button
-        onClick={() => handleStatusChange(q.id, "rejected")}
-        className="text-red-600 hover:text-red-800 text-sm font-semibold mr-2"
-      >
-        Reject
-      </button>
-    </>
-  )}
-
-  {/* Create Export Button */}
-  {q.status === "approved" && (
-    <button
-      onClick={() => handleCreateExport(q)}
-      className="px-2 py-1 text-sm font-semibold rounded ml-2 bg-green-600 text-white hover:bg-green-700"
-    >
-      Create Export
-    </button>
-  )}
-
-  {/* Rejected Label */}
-  {q.status === "rejected" && (
-    <span className="text-red-600 font-semibold">Rejected</span>
-  )}
-</td>
 
 
 
@@ -395,69 +385,76 @@ const QuotationList = () => {
                   ✖
                 </button>
               </div>
-              <table className="w-full border-collapse border text-sm">
-                <tbody>
-                  {Object.entries(viewQuotation).map(([key, value]) => {
-                    if (!value) return null;
-                    let displayValue = value;
-                    if (typeof value === "object") {
-                      if (Array.isArray(value)) {
-                        displayValue = (
-                          <div className="space-y-2">
-                            {value.map((item, i) => (
-                              <div key={i} className="mb-2">
-                                <strong>Item {i + 1}:</strong>
-                                <div className="ml-4">
-                                  {Object.entries(item).map(([k, v]) => (
-                                    <div key={k}>
-                                      {k}:{" "}
-                                      {k.toLowerCase() === "weight"
-                                        ? `${v} kg`
-                                        : k.toLowerCase() === "amount"
-                                          ? `₹${v}`
-                                          : v}
-                                    </div>
-                                  ))}
+              {agents.length === 0 ? (
+                <p>Loading agents...</p>
+              ) : (
+                <table className="w-full border-collapse border text-sm">
+                  <tbody>
+                    {Object.entries(viewQuotation).map(([key, value]) => {
+                      if (!value) return null;
+                      let displayValue = value;
+                      if (typeof value === "object") {
+                        if (Array.isArray(value)) {
+                          displayValue = (
+                            <div className="space-y-2">
+                              {value.map((item, i) => (
+                                <div key={i} className="mb-2">
+                                  <strong>Item {i + 1}:</strong>
+                                  <div className="ml-4">
+                                    {Object.entries(item).map(([k, v]) => (
+                                      <div key={k}>
+                                        {k}:{" "}
+                                        {k.toLowerCase() === "weight"
+                                          ? `${v} kg`
+                                          : k.toLowerCase() === "amount"
+                                            ? `₹${v}`
+                                            : v}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      } else {
-                        displayValue = (
-                          <div>
-                            {Object.entries(value).map(([k, v]) => (
-                              <div key={k}>
-                                {k}:{" "}
-                                {k.toLowerCase() === "weight"
-                                  ? `${v} kg`
-                                  : k.toLowerCase() === "amount"
-                                    ? `₹${v}`
-                                    : v}
-                              </div>
-                            ))}
-                          </div>
-                        );
+                              ))}
+                            </div>
+                          );
+                        } else {
+                          displayValue = (
+                            <div>
+                              {Object.entries(value).map(([k, v]) => (
+                                <div key={k}>
+                                  {k}:{" "}
+                                  {k.toLowerCase() === "weight"
+                                    ? `${v} kg`
+                                    : k.toLowerCase() === "amount"
+                                      ? `₹${v}`
+                                      : v}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
                       }
-                    }
-                    return (
-                      <tr key={key}>
-                        <td className="border p-2 font-semibold capitalize">
-                          {key.replace(/_/g, " ")}
-                        </td>
-                        <td className="border p-2">
-                          {key === "customer_id"
-                            ? customerMap[value] || "Loading..."
-                            : displayValue}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      return (
+                        <tr key={key}>
+                          <td className="border p-2 font-semibold capitalize">
+                            {key.replace(/_/g, " ")}
+                          </td>
+                          <td className="border p-2">
+                            {key === "customer_id"
+                              ? customerMap[value] || "Loading..."
+                              : key === "agent_id"
+                                ? getAgentName(value)
+                                : displayValue}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
