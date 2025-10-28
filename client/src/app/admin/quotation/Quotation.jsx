@@ -483,10 +483,10 @@ const handleSubmit = async (e) => {
       </h2>
       {error && <p className="text-red-500 mb-2">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 text-gray-700">
         {/* Quote No */}
         <div>
-          <label className="block text-sm font-medium mb-1">Quote No</label>
+          <label className="block text-sm font-medium mb-1 ">Quote No</label>
           <input
             type="text"
             name="quote_no"

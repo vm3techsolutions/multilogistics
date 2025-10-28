@@ -7,7 +7,7 @@ import CreateCourierExport from "./CreateCourierExport";
 
 export default function CourierExports() {
   const dispatch = useDispatch();
-  const { list = [], loading, error, currentPage = 1, perPage = 5 } = useSelector(
+  const { list = [], loading, error, currentPage = 1, perPage = 10 } = useSelector(
     (state) => state.courierExports || {}
   );
 
@@ -101,18 +101,19 @@ export default function CourierExports() {
 
       {/* Create Export Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-4xl p-6 relative">
-            <button
-              onClick={() => setShowForm(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
-            >
-              ✕
-            </button>
-            <CreateCourierExport onClose={() => setShowForm(false)} />
-          </div>
-        </div>
-      )}
+  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+      <button
+        onClick={() => setShowForm(false)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
+      >
+        ✕
+      </button>
+      <CreateCourierExport onClose={() => setShowForm(false)} />
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

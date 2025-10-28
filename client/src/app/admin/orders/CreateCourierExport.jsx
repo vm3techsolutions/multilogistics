@@ -539,14 +539,14 @@ export default function CreateCourierExport() {
   }, [success, error, dispatch]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
+    <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl ">
       {/* 🔍 Search Quotation */}
       <div className="relative mb-6" ref={dropdownRef}>
-        <label className="font-semibold mb-1 block">Search Quotation</label>
+        <label className="font-semibold mb-1 block text-gray-900">Search Quotation</label>
         <div className="flex items-center">
-          <Search className="mr-2" />
+          <Search className="mr-2 text-gray-600" />
           <input
-            className="border p-2 w-full rounded"
+            className="border p-2 w-full rounded text-gray-600"
             value={quotationNo}
             onChange={(e) => setQuotationNo(e.target.value)}
             placeholder="Type quotation number..."
@@ -571,11 +571,22 @@ export default function CreateCourierExport() {
 
       {/* 📦 Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <h2 className="text-xl font-bold">Courier Export Details</h2>
+        <h2 className="text-xl font-bold text-gray-900">Courier Export Details</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="date" name="booking_date" value={formData.booking_date} onChange={handleChange} className="border p-3 rounded" />
-          <select name="document_type" value={formData.document_type} onChange={handleChange} className="border p-3 rounded">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+          <input
+            type="date"
+            name="booking_date"
+            value={formData.booking_date}
+            onChange={handleChange}
+            className="border p-3 rounded"
+          />
+          <select
+            name="document_type"
+            value={formData.document_type}
+            onChange={handleChange}
+            className="border p-3 rounded"
+          >
             <option value="">Select Document Type</option>
             <option value="document">Document</option>
             <option value="non-document">Non-Document</option>
@@ -596,22 +607,24 @@ export default function CreateCourierExport() {
           <input name="correspondence_number" value={formData.correspondence_number} onChange={handleChange} placeholder="Correspondence Number" className="border p-3 rounded" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* package dims */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-gray-700">
           <input name="length" value={formData.length} onChange={handleChange} placeholder="Length" className="border p-3 rounded" />
           <input name="width" value={formData.width} onChange={handleChange} placeholder="Width" className="border p-3 rounded" />
           <input name="height" value={formData.height} onChange={handleChange} placeholder="Height" className="border p-3 rounded" />
           <input name="weight" value={formData.weight} onChange={handleChange} placeholder="Weight" className="border p-3 rounded" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-gray-700">
           <input name="package_count" value={formData.package_count} onChange={handleChange} placeholder="Package Count" className="border p-3 rounded" />
           <input name="amount" value={formData.amount} onChange={handleChange} placeholder="Amount" className="border p-3 rounded" />
         </div>
 
         <div className="border p-4 rounded">
-          <h3 className="font-semibold mb-3">Items</h3>
+          <h3 className="font-semibold mb-3 text-gray-700">Items</h3>
+
           {formData.items.map((item, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+            <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-gray-700">
               <input name="item_name" value={item.item_name} placeholder="Name" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
               <input name="item_quantity" value={item.item_quantity} placeholder="Qty" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
               <input name="item_weight" value={item.item_weight} placeholder="Weight" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
@@ -621,12 +634,13 @@ export default function CreateCourierExport() {
               )}
             </div>
           ))}
-          <button type="button" onClick={addItem} className="bg-blue-600 text-white px-3 py-2 rounded">
+
+          <button type="button" onClick={addItem} className="primaryBg text-white px-3 py-2 rounded">
             + Add Item
           </button>
         </div>
 
-        <button type="submit" disabled={exportLoading || quotationLoading} className="w-full bg-green-600 text-white py-3 rounded">
+        <button type="submit" disabled={exportLoading || quotationLoading} className="w-full primaryBg text-white py-3 rounded">
           {exportLoading ? "Processing..." : "Create Export"}
         </button>
       </form>

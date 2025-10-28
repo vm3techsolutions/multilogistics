@@ -111,7 +111,7 @@ export default function CustDetails() {
                     <th className="p-3 border border-gray-200">Email</th>
                     <th className="p-3 border border-gray-200">Phone</th>
                     <th className="p-3 border border-gray-200">Address</th>
-                    <th className="p-3 border border-gray-200">Status</th>
+                    {/* <th className="p-3 border border-gray-200">Status</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -123,7 +123,7 @@ export default function CustDetails() {
                       <td className="p-3 border border-gray-200">{cust.email}</td>
                       <td className="p-3 border border-gray-200">{cust.phone}</td>
                       <td className="p-3 border border-gray-200">{cust.address}</td>
-                      <td className="p-3 border border-gray-200">
+                      {/* <td className="p-3 border border-gray-200">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             cust.status === "active"
@@ -135,7 +135,7 @@ export default function CustDetails() {
                         >
                           {cust.status || "Active"}
                         </span>
-                      </td>
+                      </td> */}
                     </tr>
                   ))}
                 </tbody>
