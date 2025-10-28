@@ -532,7 +532,7 @@ const handleSubmit = async (e) => {
           />
         </div>
 
-        {/* Packages */}
+        {/* Packages
         <div className="col-span-2">
           <div className="flex justify-between mb-2">
             <h3 className="font-semibold">Packages</h3>
@@ -548,8 +548,9 @@ const handleSubmit = async (e) => {
                   <input
                     type="number"
                     name={f}
-                    value={pkg[f] || 0}
+                    value={pkg[f] || ' '}
                     onChange={(e) => handlePackageChange(i, e)}
+                    placeholder={`${f}`}
                     className="form-input"
                   />
                 </div>
@@ -564,6 +565,72 @@ const handleSubmit = async (e) => {
                   readOnly
                 />
               </div>
+              {formData.packages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removePackage(i)}
+                  className="text-red-600 self-end"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div> */}
+
+        {/* Packages */}
+        <div className="col-span-2">
+          <div className="flex justify-between mb-2">
+            <h3 className="font-semibold">Packages</h3>
+            <button
+              type="button"
+              onClick={addPackage}
+              className="text-blue-600"
+            >
+              + Add Package
+            </button>
+          </div>
+
+          {formData.packages.map((pkg, i) => (
+            <div key={i} className="grid grid-cols-6 gap-2 mb-2">
+              {["length", "width", "height", "weight"].map((f, idx) => {
+                const placeholderMap = {
+                  length: "Length (cm)",
+                  width: "Width (cm)",
+                  height: "Height (cm)",
+                  weight: "Weight (kg)",
+                };
+
+                return (
+                  <div key={idx}>
+                    <label className="block text-sm font-medium mb-1 capitalize">
+                      {f}
+                    </label>
+                    <input
+                      type="number"
+                      name={f}
+                      value={pkg[f] || ""}
+                      onChange={(e) => handlePackageChange(i, e)}
+                      placeholder={placeholderMap[f]}
+                      className="form-input"
+                    />
+                  </div>
+                );
+              })}
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Vol. Weight
+                </label>
+                <input
+                  type="text"
+                  name="volumetric_weight"
+                  value={pkg.volumetric_weight || 0}
+                  className="form-input bg-gray-100"
+                  readOnly
+                />
+              </div>
+
               {formData.packages.length > 1 && (
                 <button
                   type="button"

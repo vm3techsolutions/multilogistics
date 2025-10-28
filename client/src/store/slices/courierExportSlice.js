@@ -1,38 +1,47 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosInstance from "@/api/axiosInstance"; // your axios instance
+import axios from "axios";
 
-// ✅ Fetch all courier exports
+const API_BASE_URL = "http://localhost:5000/api";
+
+/* ------------------------- FETCH ALL COURIER EXPORTS ------------------------- */
 export const fetchCourierExports = createAsyncThunk(
-  "courierExports/fetchCourierExports",
+  "courierExports/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get("/courier-exports-all");
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE_URL}/courier-exports-all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return res.data.courier_exports || [];
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch courier exports");
     }
   }
 );
 
-// ✅ Create a new courier export
+/* --------------------------- CREATE COURIER EXPORT --------------------------- */
 export const createCourierExport = createAsyncThunk(
-  "courierExports/createCourierExport",
+  "courierExports/create",
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.post("/courier-exports", formData);
-      return res.data.courier_export; // return the created export object
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`${API_BASE_URL}/courier-exports`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.courier_export || res.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to create courier export");
     }
   }
 );
 
-// ✅ Slice
+/* ------------------------------- SLICE SETUP ------------------------------- */
 const courierExportSlice = createSlice({
   name: "courierExports",
   initialState: {
     list: [],
     loading: false,
+    success: false,
     error: null,
     currentPage: 1,
     perPage: 5,
@@ -45,10 +54,15 @@ const courierExportSlice = createSlice({
       state.perPage = action.payload;
       state.currentPage = 1;
     },
+    resetCourierExportState: (state) => {
+      state.loading = false;
+      state.success = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all
+      // ✅ Fetch all courier exports
       .addCase(fetchCourierExports.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -62,14 +76,16 @@ const courierExportSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create export
+      // ✅ Create courier export
       .addCase(createCourierExport.pending, (state) => {
         state.loading = true;
+        state.success = false;
         state.error = null;
       })
       .addCase(createCourierExport.fulfilled, (state, action) => {
         state.loading = false;
-        state.list.unshift(action.payload); // add new export to the top
+        state.success = true;
+        state.list.unshift(action.payload); // add new export to top
       })
       .addCase(createCourierExport.rejected, (state, action) => {
         state.loading = false;
@@ -78,5 +94,6 @@ const courierExportSlice = createSlice({
   },
 });
 
-export const { setPage, setPerPage } = courierExportSlice.actions;
+/* ----------------------------- EXPORT ACTIONS ----------------------------- */
+export const { setPage, setPerPage, resetCourierExportState } = courierExportSlice.actions;
 export default courierExportSlice.reducer;

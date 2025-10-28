@@ -7,7 +7,8 @@ const adminController = require('../controller/adminController/adminController')
 const agentController = require('../controller/agentController/agentController');
 const { createCustomer, getCustomers, getCustomerById  } = require('../controller/customerController/customerController');
 const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
-const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
+//const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
+const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuoteNo, updateQuotation } = require('../controller/quotationController/quotationController');
 const quotationStatusController = require('../controller/quotationController/approveQuotation');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
@@ -36,6 +37,7 @@ router.get("/get-customer/:id", verifyToken, getCustomerById);
 router.post('/createQuotation', verifyToken, createQuotation);
 router.get('/getAllQuotations',verifyToken, getAllQuotations);
 router.get('/getQuotationById/:id', verifyToken, getQuotationById);
+router.get('/number/:quote_no', getQuotationByQuoteNo);
 router.put('/updateQuotation/:id', verifyToken, updateQuotation);
 router.put('/approveQuotation/:id', verifyToken, quotationStatusController.updateQuotationStatus);
 router.post('/quotation/send-email/:id', verifyToken, quotationStatusController.triggerQuotationEmail);
