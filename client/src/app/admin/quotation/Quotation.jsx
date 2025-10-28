@@ -13,6 +13,7 @@ import {
 } from "@/store/slices/customerSlice";
 import { getAgents } from "@/store/slices/agentSlice";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const Quotation = ({ existingQuotation = null, onClose, onSuccess }) => {
   const dispatch = useDispatch();
@@ -305,12 +306,12 @@ const handleSelectCustomer = (customer) => {
       charges: prev.charges.filter((_, i) => i !== index),
     }));
 
-  // Submit
+  
   // Submit
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // Map packages
+  // Map packages and charges
   const packagesPayload = formData.packages.map((pkg) => ({
     length: Number(pkg.length) || 0,
     width: Number(pkg.width) || 0,
@@ -319,7 +320,6 @@ const handleSubmit = async (e) => {
     volumetric_weight: Number(pkg.volumetric_weight) || 0,
   }));
 
-  // Map charges
   const chargesPayload = formData.charges.map((chg) => ({
     charge_name: chg.charge_name || "",
     type: chg.type || "",
@@ -328,49 +328,148 @@ const handleSubmit = async (e) => {
   }));
 
   const payload = {
+    ...formData,
     packages: packagesPayload,
     charges: chargesPayload,
   };
 
   try {
     if (isEditMode) {
+      // 🔹 Update existing quotation
       const resultAction = await dispatch(
         updateQuotation({ id: existingQuotation.id, data: payload })
       );
 
       if (updateQuotation.fulfilled.match(resultAction)) {
-  // ✅ Call onSuccess callback if provided
-  if (onSuccess) {
-    await onSuccess(updatedQuotation); // Pass updated quotation
-  } else {
-    // fallback
-    setFormData((prev) => ({
-      ...prev,
-      status: "draft",
-    }));
-    toast.success("Quotation updated successfully ✅");
-    onClose?.();
-  }
-} else {
-  const errMsg = resultAction.payload?.message || "Failed to update quotation";
-  toast.error(errMsg);
-}
-
+        Swal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Quotation updated successfully ✅",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        onSuccess?.(resultAction.payload);
+        onClose?.();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text:
+            resultAction.payload?.message ||
+            "Failed to update the quotation. Try again!",
+        });
+      }
     } else {
-      // For creation, send full formData
-      const creationPayload = {
-        ...formData,
-        packages: packagesPayload,
-        charges: chargesPayload,
-      };
-      await dispatch(createQuotation(creationPayload));
-      alert("Quotation created successfully ✅");
+      // 🔹 Create new quotation
+      const resultAction = await dispatch(createQuotation(payload));
+
+      if (createQuotation.fulfilled.match(resultAction)) {
+        Swal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "Quotation created successfully ✅",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        onSuccess?.(resultAction.payload);
+        onClose?.();
+      } else {
+        // 🔸 Handle duplicate quotation error or any backend error
+        const errMsg =
+          resultAction.payload?.message ||
+          resultAction.error?.message ||
+          "Failed to create quotation";
+
+        if (errMsg.toLowerCase().includes("already") || errMsg.includes("exists")) {
+          Swal.fire({
+            icon: "error",
+            title: "Duplicate Quotation!",
+            text:
+              "A quotation with this number or details already exists. Please check before creating again.",
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Error!",
+            text: errMsg,
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("Error saving quotation:", err);
-    alert("Something went wrong! ❌");
+    Swal.fire({
+      icon: "error",
+      title: "Unexpected Error!",
+      text: "Something went wrong while saving the quotation ❌",
+    });
   }
 };
+
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+//   // Map packages
+//   const packagesPayload = formData.packages.map((pkg) => ({
+//     length: Number(pkg.length) || 0,
+//     width: Number(pkg.width) || 0,
+//     height: Number(pkg.height) || 0,
+//     weight: Number(pkg.weight) || 0,
+//     volumetric_weight: Number(pkg.volumetric_weight) || 0,
+//   }));
+
+//   // Map charges
+//   const chargesPayload = formData.charges.map((chg) => ({
+//     charge_name: chg.charge_name || "",
+//     type: chg.type || "",
+//     amount: Number(chg.amount) || 0,
+//     description: chg.description || "",
+//   }));
+
+//   const payload = {
+//     packages: packagesPayload,
+//     charges: chargesPayload,
+//   };
+
+//   try {
+//     if (isEditMode) {
+//       const resultAction = await dispatch(
+//         updateQuotation({ id: existingQuotation.id, data: payload })
+//       );
+
+//       if (updateQuotation.fulfilled.match(resultAction)) {
+//   // ✅ Call onSuccess callback if provided
+//   if (onSuccess) {
+//     await onSuccess(updatedQuotation); // Pass updated quotation
+//   } else {
+//     // fallback
+//     setFormData((prev) => ({
+//       ...prev,
+//       status: "draft",
+//     }));
+//     toast.success("Quotation updated successfully ✅");
+//     onClose?.();
+//   }
+// } else {
+//   const errMsg = resultAction.payload?.message || "Failed to update quotation";
+//   toast.error(errMsg);
+// }
+
+//     } else {
+//       // For creation, send full formData
+//       const creationPayload = {
+//         ...formData,
+//         packages: packagesPayload,
+//         charges: chargesPayload,
+//       };
+//       await dispatch(createQuotation(creationPayload));
+//       alert("Quotation created successfully ✅");
+//     }
+//   } catch (err) {
+//     console.error("Error saving quotation:", err);
+//     alert("Something went wrong! ❌");
+//   }
+// };
 
 
   if (!mounted) return null;

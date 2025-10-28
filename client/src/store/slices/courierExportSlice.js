@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosInstance from "@/api/axiosInstance";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -9,7 +9,7 @@ export const fetchCourierExports = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_BASE_URL}/courier-exports-all`, {
+      const res = await axiosInstance.get(`/courier-exports-all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return res.data.courier_exports || [];
@@ -25,7 +25,7 @@ export const createCourierExport = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(`${API_BASE_URL}/courier-exports`, formData, {
+      const res = await axiosInstance.post(`/courier-exports`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return res.data.courier_export || res.data;
