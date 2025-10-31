@@ -220,7 +220,34 @@ const getCourierExportById = async (req, res) => {
     if (exportResult.rows.length === 0) {
       return res.status(404).json({ message: 'Courier export not found' });
     }
-    res.status(200).json({ courier_export: exportResult.rows[0] });
+      const courierExport = exportResult.rows[0];
+
+      // If this courier export is linked to a quotation, fetch quotation packages and charges
+      if (courierExport.quotation_id) {
+        try {
+          const { rows: quotationPackages } = await client.query(
+            `SELECT *
+             FROM courier_export_quotation_packages
+             WHERE quotation_id = $1`,
+            [courierExport.quotation_id]
+          );
+
+          const { rows: quotationCharges } = await client.query(
+            `SELECT *
+             FROM courier_export_quotation_charges
+             WHERE quotation_id = $1`,
+            [courierExport.quotation_id]
+          );
+
+          courierExport.quotation_packages = quotationPackages;
+          courierExport.quotation_charges = quotationCharges;
+        } catch (qErr) {
+          console.error('Error fetching quotation packages/charges:', qErr);
+          // don't fail the whole request if these supplemental queries error; return export without them
+        }
+      }
+
+      res.status(200).json({ courier_export: courierExport });
   } catch (err) {
     console.error('Get Courier Export By ID Error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
