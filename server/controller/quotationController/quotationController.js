@@ -172,7 +172,79 @@ const createQuotation = async (req, res) => {
     client.release();
   }
 };
+// ✅ Get quotation by quote number (for export auto-fill)
+const getQuotationByQuoteNo = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { quote_no } = req.params;
+    if (!quote_no) {
+      return res.status(400).json({ success: false, message: "Quotation number is required" });
+    }
 
+    // ✅ FETCH quotation + customer info
+    const { rows: quotations } = await client.query(
+      `SELECT q.id, q.quote_no, q.subject, q.customer_id, q.agent_id, q.address, 
+              q.origin, q.destination, q.actual_weight, q.volume_weight, 
+              q.packages_count, q.created_by, q.status, q.created_at,
+              c.name AS customer_name,
+              c.email AS customer_email,
+              c.phone AS customer_phone,
+              c.address AS customer_address
+       FROM courier_export_quotations q
+       LEFT JOIN customers c ON q.customer_id = c.id
+       WHERE q.quote_no = $1`,
+      [quote_no]
+    );
+
+    if (quotations.length === 0) {
+      return res.status(404).json({ success: false, message: "Quotation not found" });
+    }
+
+    const quotation = quotations[0];
+
+    // ✅ FETCH packages
+    const { rows: packages } = await client.query(
+      `SELECT id, length, width, height, weight 
+       FROM courier_export_quotation_packages
+       WHERE quotation_id = $1`,
+      [quotation.id]
+    );
+    quotation.packages = packages;
+
+    // ✅ FETCH charges
+    const { rows: charges } = await client.query(
+      `SELECT id, charge_name, type, amount, description 
+       FROM courier_export_quotation_charges
+       WHERE quotation_id = $1`,
+      [quotation.id]
+    );
+    quotation.charges = charges;
+
+    // ✅ Attach customer object
+    quotation.customer = {
+      name: quotation.customer_name,
+      email: quotation.customer_email,
+      mobile: quotation.customer_mobile,
+      address: quotation.customer_address
+    };
+
+    res.json({
+      success: true,
+      message: "Quotation fetched successfully by quote number",
+      data: quotation,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching quotation by quote number",
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
 // ✅ Get all quotations
 const getAllQuotations = async (req, res) => {
   const client = await pool.connect();
@@ -502,4 +574,4 @@ const updateQuotation = async (req, res) => {
 };
 
 
-module.exports = {createQuotation,  getAllQuotations, getQuotationById, updateQuotation};
+module.exports = {createQuotation, getQuotationByQuoteNo,  getAllQuotations, getQuotationById, updateQuotation};

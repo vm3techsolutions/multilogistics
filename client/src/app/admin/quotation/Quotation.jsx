@@ -13,6 +13,7 @@ import {
 } from "@/store/slices/customerSlice";
 import { getAgents } from "@/store/slices/agentSlice";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const Quotation = ({ existingQuotation = null, onClose, onSuccess }) => {
   const dispatch = useDispatch();
@@ -50,122 +51,170 @@ const Quotation = ({ existingQuotation = null, onClose, onSuccess }) => {
     packages: [
       { length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 },
     ],
-    charges: [{ charge_name: "", type: "", amount: 0, description: "" }],
+    charges: [
+  { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
+  { charge_name: "FSC", type: "freight", amount: 0, description: "" },
+  { charge_name: "Demo", type: "freight", amount: 0, description: "" },
+],
+destination_charges: [
+    { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
+  ],
   });
+
+  useEffect(() => {
+    // ✅ Clear any previously selected customer immediately when modal opens
+    if (!isEditMode) {
+      dispatch(clearSelectedCustomer());
+    }
+  }, [dispatch, isEditMode]);
 
   // Mounting
   useEffect(() => setMounted(true), []);
 
   // ✅ Ensure blank form when creating new quotation
-useEffect(() => {
-  if (!isEditMode) {
-    setFormData({
-      quote_no: "",
-      subject: "",
-      customer_id: "",
-      customer_name: "",
-      agent_id: "",
-      agent_name: "",
-      address: "",
-      origin: "",
-      destination: "",
-      actual_weight: 0,
-      created_by: user?.id || "",
-      created_by_name: user?.name || "Admin",
-      packages: [
-        { length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 },
-      ],
-      charges: [{ charge_name: "", type: "", amount: 0, description: "" }],
-    });
+  useEffect(() => {
+    if (!isEditMode) {
+      setFormData({
+        quote_no: "",
+        subject: "",
+        customer_id: "",
+        customer_name: "",
+        agent_id: "",
+        agent_name: "",
+        address: "",
+        origin: "",
+        destination: "",
+        actual_weight: 0,
+        created_by: user?.id || "",
+        created_by_name: user?.name || "Admin",
+        packages: [
+          { length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 },
+        ],
+        charges: [
+  { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
+  { charge_name: "FSC", type: "freight", amount: 0, description: "" },
+  { charge_name: "Demo", type: "freight", amount: 0, description: "" },
+],
+destination_charges: [
+    { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
+  ],
+      });
 
-    // Clear selected customer globally
-    dispatch(clearSelectedCustomer());
-  }
-}, [isEditMode, dispatch, user]);
+      // Clear selected customer globally
+      dispatch(clearSelectedCustomer());
+    }
+  }, [isEditMode, dispatch, user]);
 
 
   useEffect(() => {
-    if (!mounted) return;
-    dispatch(clearSelectedCustomer());
-    dispatch(fetchCustomers());
+    dispatch(clearSelectedCustomer()); // ✅ clear first to avoid autofill
+    dispatch(fetchCustomers()).then(() => setMounted(true));
     dispatch(getAgents());
-  }, [dispatch, mounted]);
+  }, [dispatch]);
+
 
   // Populate existing quotation
-  useEffect(() => {
-    if (existingQuotation && formData.quote_no === "") {
-      const updatedData = {
-        ...formData,
-        ...existingQuotation,
-        packages:
-          existingQuotation.packages?.length > 0
-            ? existingQuotation.packages.map((pkg) => ({
-                length: pkg.length || 0,
-                width: pkg.width || 0,
-                height: pkg.height || 0,
-                weight: pkg.weight || 0,
-                volumetric_weight: pkg.volumetric_weight || 0,
-              }))
-            : formData.packages,
-        charges:
-          existingQuotation.charges?.length > 0
-            ? existingQuotation.charges.map((chg) => ({
-                charge_name: chg.charge_name || "",
-                type: chg.type || "",
-                amount: chg.amount || 0,
-                description: chg.description || "",
-              }))
-            : formData.charges,
-        actual_weight: existingQuotation.actual_weight || 0,
-        customer_name: "",
-        agent_name: "",
-      };
+useEffect(() => {
+  if (!existingQuotation) return;
 
-      // Fetch customer info if needed
-      if (existingQuotation.customer_id) {
-        const customer = customers.find(
-          (c) => c.id === existingQuotation.customer_id
-        );
-        if (customer) {
-          updatedData.customer_name = customer.name || "";
-          updatedData.address = customer.address || "";
-        } else {
-          dispatch(fetchCustomerById(existingQuotation.customer_id));
-        }
-      }
+  setFormData((prev) => {
+    // Prevent reloading same quote multiple times
+    if (prev.quote_no === existingQuotation.quote_no) return prev;
 
-      // Fetch agent info if needed
-      if (existingQuotation.agent_id) {
-        const agent = agents.find((a) => a.id === existingQuotation.agent_id);
-        if (agent) updatedData.agent_name = agent.name || "";
-      }
+    const freightCharges =
+      existingQuotation.charges
+        ?.filter((chg) => chg.type?.toLowerCase() === "freight")
+        .map((chg) => ({
+          charge_name: chg.charge_name || "",
+          type: "freight",
+          amount: chg.amount || 0,
+          description: chg.description || "",
+        })) || [];
 
-      setFormData(updatedData);
-    }
-  }, [existingQuotation, customers, agents]);
+    const destinationCharges =
+      existingQuotation.charges
+        ?.filter((chg) => chg.type?.toLowerCase() === "destination")
+        .map((chg) => ({
+          charge_name: chg.charge_name || "",
+          type: "destination",
+          amount: chg.amount || 0,
+          description: chg.description || "",
+        })) || [];
+
+    // ✅ Deduplicate destination charges
+    const uniqueDest = Array.from(
+      new Map(
+        destinationCharges.map((chg) => [
+          `${chg.charge_name.toLowerCase()}_${chg.type.toLowerCase()}`,
+          chg,
+        ])
+      ).values()
+    );
+
+    // ✅ Ensure at least one destination charge exists
+    const finalDestination =
+      uniqueDest.length > 0
+        ? uniqueDest
+        : [
+            {
+              charge_name: "Export Clearance Agency",
+              type: "destination",
+              amount: 0,
+              description: "",
+            },
+          ];
+
+    const updatedData = {
+      ...prev,
+      ...existingQuotation,
+      packages:
+        existingQuotation.packages?.map((pkg) => ({
+          length: pkg.length || 0,
+          width: pkg.width || 0,
+          height: pkg.height || 0,
+          weight: pkg.weight || 0,
+          volumetric_weight: pkg.volumetric_weight || 0,
+        })) || prev.packages,
+      charges: freightCharges.length ? freightCharges : prev.charges,
+      destination_charges: finalDestination,
+    };
+
+    return updatedData;
+  });
+}, [existingQuotation]);
+
+
+
 
   // Update customer selection
   // Auto-fill when creating a new quotation
-useEffect(() => {
-  if (selectedCustomer && !existingQuotation && selectedCustomer.id) {
-    setFormData(prev => ({
-      ...prev,
-      customer_name: selectedCustomer.name || "",
-      customer_id: selectedCustomer.id || "",
-      address: selectedCustomer.address || "",
-      agent_id: selectedCustomer.agent_id || "",
-    }));
-
-    // Auto-fill agent name if agent exists
-    const agent = agents.find(a => a.id === selectedCustomer.agent_id);
-    if (agent) {
+  useEffect(() => {
+    if (
+      selectedCustomer &&
+      selectedCustomer.id &&
+      !isEditMode &&
+      formData.customer_name === "" &&
+      formData.quote_no !== "" // optional: ensure form initialized
+    ) {
+      // Auto-fill only if customer manually selected
       setFormData(prev => ({
         ...prev,
-        agent_name: agent.name || "",
+        customer_name: selectedCustomer.name || "",
+        customer_id: selectedCustomer.id || "",
+        address: selectedCustomer.address || "",
+        agent_id: selectedCustomer.agent_id || "",
       }));
+
+      const agent = agents.find(a => a.id === selectedCustomer.agent_id);
+      if (agent) {
+        setFormData(prev => ({
+          ...prev,
+          agent_name: agent.name || "",
+        }));
+      }
     }
-  }
-}, [selectedCustomer, agents, existingQuotation]);
+  }, [selectedCustomer, agents, existingQuotation]);
+
 
 
   // Generic input change
@@ -179,37 +228,37 @@ useEffect(() => {
   };
 
   // Customer input
- const handleCustomerInput = (e) => {
-  const value = e.target.value || "";
-  setFormData((prev) => ({ ...prev, customer_name: value, customer_id: "" }));
+  const handleCustomerInput = (e) => {
+    const value = e.target.value || "";
+    setFormData((prev) => ({ ...prev, customer_name: value, customer_id: "" }));
 
-  if (value.trim()) {
-    const filtered = customers.filter((c) =>
-      c.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredCustomers(filtered);
-    setShowCustomerSuggestions(true);
-  } else {
-    setFilteredCustomers([]);
+    if (value.trim()) {
+      const filtered = customers.filter((c) =>
+        c.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredCustomers(filtered);
+      setShowCustomerSuggestions(true);
+    } else {
+      setFilteredCustomers([]);
+      setShowCustomerSuggestions(false);
+    }
+  };
+
+  const handleSelectCustomer = (customer) => {
+    setFormData((prev) => ({
+      ...prev,
+      customer_name: customer.name,
+      customer_id: customer.id,
+      address: customer.address,
+      agent_id: customer.agent_id,
+    }));
+
+    // Auto-fill agent if exists
+    const agent = agents.find((a) => a.id === customer.agent_id);
+    if (agent) setFormData((prev) => ({ ...prev, agent_name: agent.name }));
+
     setShowCustomerSuggestions(false);
-  }
-};
-
-const handleSelectCustomer = (customer) => {
-  setFormData((prev) => ({
-    ...prev,
-    customer_name: customer.name,
-    customer_id: customer.id,
-    address: customer.address,
-    agent_id: customer.agent_id,
-  }));
-
-  // Auto-fill agent if exists
-  const agent = agents.find((a) => a.id === customer.agent_id);
-  if (agent) setFormData((prev) => ({ ...prev, agent_name: agent.name }));
-
-  setShowCustomerSuggestions(false);
-};
+  };
 
 
 
@@ -231,13 +280,13 @@ const handleSelectCustomer = (customer) => {
   };
 
   const handleSelectAgent = (agent) => {
-  setFormData(prev => ({
-    ...prev,
-    agent_name: agent.name || "",
-    agent_id: agent.id || "",
-  }));
-  setShowAgentSuggestions(false);
-};
+    setFormData(prev => ({
+      ...prev,
+      agent_name: agent.name || "",
+      agent_id: agent.id || "",
+    }));
+    setShowAgentSuggestions(false);
+  };
 
 
   // Package handlers
@@ -246,22 +295,22 @@ const handleSelectCustomer = (customer) => {
     const updated = formData.packages.map((pkg, i) =>
       i === index
         ? {
-            ...pkg,
-            [name]: parseFloat(value) || 0,
-            volumetric_weight:
-              ["length", "width", "height"].includes(name)
-                ? parseFloat(
-                    (
-                      ((name === "length"
-                        ? parseFloat(value)
-                        : pkg.length) *
-                        (name === "width" ? parseFloat(value) : pkg.width) *
-                        (name === "height" ? parseFloat(value) : pkg.height)) /
-                      5000
-                    ).toFixed(2)
-                  )
-                : pkg.volumetric_weight,
-          }
+          ...pkg,
+          [name]: parseFloat(value) || 0,
+          volumetric_weight:
+            ["length", "width", "height"].includes(name)
+              ? parseFloat(
+                (
+                  ((name === "length"
+                    ? parseFloat(value)
+                    : pkg.length) *
+                    (name === "width" ? parseFloat(value) : pkg.width) *
+                    (name === "height" ? parseFloat(value) : pkg.height)) /
+                  5000
+                ).toFixed(2)
+              )
+              : pkg.volumetric_weight,
+        }
         : pkg
     );
     setFormData((prev) => ({ ...prev, packages: updated }));
@@ -290,6 +339,15 @@ const handleSelectCustomer = (customer) => {
     setFormData((prev) => ({ ...prev, charges: updated }));
   };
 
+  const handleDestinationChargeChange = (index, e) => {
+  const { name, value } = e.target;
+  const updated = [...(formData.destination_charges || [])];
+  updated[index][name] =
+    name === "amount" ? (value === "" ? "" : parseFloat(value)) : value;
+  setFormData((prev) => ({ ...prev, destination_charges: updated }));
+};
+
+
   const addCharge = () =>
     setFormData((prev) => ({
       ...prev,
@@ -305,12 +363,12 @@ const handleSelectCustomer = (customer) => {
       charges: prev.charges.filter((_, i) => i !== index),
     }));
 
+
   // Submit
-  // Submit
-const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // Map packages
+  // 🔹 Prepare packages
   const packagesPayload = formData.packages.map((pkg) => ({
     length: Number(pkg.length) || 0,
     width: Number(pkg.width) || 0,
@@ -319,58 +377,126 @@ const handleSubmit = async (e) => {
     volumetric_weight: Number(pkg.volumetric_weight) || 0,
   }));
 
-  // Map charges
-  const chargesPayload = formData.charges.map((chg) => ({
+  // 🔹 Prepare charges (clean and distinct)
+  const freightCharges = (formData.charges || []).map((chg) => ({
     charge_name: chg.charge_name || "",
-    type: chg.type || "",
+    type: "freight",
     amount: Number(chg.amount) || 0,
     description: chg.description || "",
   }));
 
+  const destinationCharges = (formData.destination_charges || []).map((chg) => ({
+    charge_name: chg.charge_name || "",
+    type: "destination",
+    amount: Number(chg.amount) || 0,
+    description: chg.description || "",
+  }));
+
+  // 🔹 Combine all charges freshly (no merging with old state)
+  const allCharges = [...freightCharges, ...destinationCharges];
+
+  // 🔹 Create payload
   const payload = {
+    ...formData,
     packages: packagesPayload,
-    charges: chargesPayload,
+    charges: allCharges,
   };
 
   try {
     if (isEditMode) {
+      // 🔹 Update existing quotation (avoid duplication)
       const resultAction = await dispatch(
         updateQuotation({ id: existingQuotation.id, data: payload })
       );
 
       if (updateQuotation.fulfilled.match(resultAction)) {
-  // ✅ Call onSuccess callback if provided
-  if (onSuccess) {
-    await onSuccess(updatedQuotation); // Pass updated quotation
-  } else {
-    // fallback
-    setFormData((prev) => ({
-      ...prev,
-      status: "draft",
-    }));
-    toast.success("Quotation updated successfully ✅");
-    onClose?.();
-  }
-} else {
-  const errMsg = resultAction.payload?.message || "Failed to update quotation";
-  toast.error(errMsg);
-}
 
+        const updatedQuotation = resultAction.payload;
+
+        // ✅ Immediately update local state to reflect changes
+        setFormData((prev) => ({
+          ...prev,
+          ...updatedQuotation,
+          charges: updatedQuotation.charges?.filter((c) => c.type === "freight") || [],
+          destination_charges:
+            updatedQuotation.charges?.filter((c) => c.type === "destination") || [],
+        }));
+
+        // ✅ If you have parent update callback, call it
+        onSuccess?.(updatedQuotation);
+
+        Swal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Quotation updated successfully ✅",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        onSuccess?.(resultAction.payload);
+        onClose?.();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text:
+            resultAction.payload?.message ||
+            "Failed to update the quotation. Try again!",
+        });
+      }
     } else {
-      // For creation, send full formData
-      const creationPayload = {
-        ...formData,
-        packages: packagesPayload,
-        charges: chargesPayload,
-      };
-      await dispatch(createQuotation(creationPayload));
-      alert("Quotation created successfully ✅");
+      // 🔹 Create new quotation
+      const resultAction = await dispatch(createQuotation(payload));
+
+      if (createQuotation.fulfilled.match(resultAction)) {
+
+        const createdQuotation = resultAction.payload;
+
+        // ✅ Update local state immediately for new entry
+        setFormData(createdQuotation);
+        onSuccess?.(createdQuotation);
+
+        Swal.fire({
+          icon: "success",
+          title: "Created!",
+          text: "Quotation created successfully ✅",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        // onSuccess?.(resultAction.payload);
+        onClose?.();
+      } else {
+        // 🔸 Handle duplicate quotation or backend error
+        const errMsg =
+          resultAction.payload?.message ||
+          resultAction.error?.message ||
+          "Failed to create quotation";
+
+        if (errMsg.toLowerCase().includes("already") || errMsg.includes("exists")) {
+          Swal.fire({
+            icon: "error",
+            title: "Duplicate Quotation!",
+            text:
+              "A quotation with this number or details already exists. Please check before creating again.",
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Error!",
+            text: errMsg,
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("Error saving quotation:", err);
-    alert("Something went wrong! ❌");
+    Swal.fire({
+      icon: "error",
+      title: "Unexpected Error!",
+      text: "Something went wrong while saving the quotation ❌",
+    });
   }
 };
+
 
 
   if (!mounted) return null;
@@ -384,10 +510,10 @@ const handleSubmit = async (e) => {
       </h2>
       {error && <p className="text-red-500 mb-2">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 text-gray-700">
         {/* Quote No */}
         <div>
-          <label className="block text-sm font-medium mb-1">Quote No</label>
+          <label className="block text-sm font-medium mb-1 ">Quote No</label>
           <input
             type="text"
             name="quote_no"
@@ -412,60 +538,59 @@ const handleSubmit = async (e) => {
         </div>
 
         {/* Customer */}
-        {/* Customer */}
-<div className="relative">
-  <label className="block text-sm font-medium mb-1">Customer Name</label>
-  <input
-    type="text"
-    name="customer_name"
-    value={formData.customer_name || ""}
-    onChange={handleCustomerInput}
-    className="form-input"
-    disabled={isMainFieldDisabled}
-    required
-    autoComplete="off"
-  />
-  {showCustomerSuggestions && filteredCustomers.length > 0 && (
-    <ul className="absolute z-10 bg-white border border-gray-300 w-full max-h-40 overflow-auto mt-1 rounded shadow">
-      {filteredCustomers.map((c) => (
-        <li
-          key={c.id}
-          onClick={() => handleSelectCustomer(c)}
-          className="p-2 hover:bg-gray-100 cursor-pointer"
-        >
-          {c.name}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
+        <div className="relative">
+          <label className="block text-sm font-medium mb-1">Customer Name</label>
+          <input
+            type="text"
+            name="customer_name"
+            value={formData.customer_name || ""}
+            onChange={handleCustomerInput}
+            className="form-input"
+            disabled={isMainFieldDisabled}
+            required
+            autoComplete="off"
+          />
+          {showCustomerSuggestions && filteredCustomers.length > 0 && (
+            <ul className="absolute z-10 bg-white border border-gray-300 w-full max-h-40 overflow-auto mt-1 rounded shadow">
+              {filteredCustomers.map((c) => (
+                <li
+                  key={c.id}
+                  onClick={() => handleSelectCustomer(c)}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  {c.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-{/* Agent */}
-<div className="relative">
-  <label className="block text-sm font-medium mb-1">Agent Name</label>
-  <input
-    type="text"
-    name="agent_name"
-    value={formData.agent_name || ""}
-    onChange={handleAgentInput}
-    className="form-input"
-    disabled={isMainFieldDisabled}
-    autoComplete="off"
-  />
-  {showAgentSuggestions && filteredAgents.length > 0 && (
-    <ul className="absolute z-10 bg-white border border-gray-300 w-full max-h-40 overflow-auto mt-1 rounded shadow">
-      {filteredAgents.map((a) => (
-        <li
-          key={a.id}
-          onClick={() => handleSelectAgent(a)}
-          className="p-2 hover:bg-gray-100 cursor-pointer"
-        >
-          {a.name}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
+        {/* Agent */}
+        <div className="relative">
+          <label className="block text-sm font-medium mb-1">Agent Name</label>
+          <input
+            type="text"
+            name="agent_name"
+            value={formData.agent_name || ""}
+            onChange={handleAgentInput}
+            className="form-input"
+            disabled={isMainFieldDisabled}
+            autoComplete="off"
+          />
+          {showAgentSuggestions && filteredAgents.length > 0 && (
+            <ul className="absolute z-10 bg-white border border-gray-300 w-full max-h-40 overflow-auto mt-1 rounded shadow">
+              {filteredAgents.map((a) => (
+                <li
+                  key={a.id}
+                  onClick={() => handleSelectAgent(a)}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                >
+                  {a.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
 
         {/* Address */}
@@ -536,26 +661,46 @@ const handleSubmit = async (e) => {
         <div className="col-span-2">
           <div className="flex justify-between mb-2">
             <h3 className="font-semibold">Packages</h3>
-            <button type="button" onClick={addPackage} className="text-blue-600">
+            <button
+              type="button"
+              onClick={addPackage}
+              className="text-blue-600"
+            >
               + Add Package
             </button>
           </div>
+
           {formData.packages.map((pkg, i) => (
             <div key={i} className="grid grid-cols-6 gap-2 mb-2">
-              {["length", "width", "height", "weight"].map((f, idx) => (
-                <div key={idx}>
-                  <label className="block text-sm font-medium mb-1 capitalize">{f}</label>
-                  <input
-                    type="number"
-                    name={f}
-                    value={pkg[f] || 0}
-                    onChange={(e) => handlePackageChange(i, e)}
-                    className="form-input"
-                  />
-                </div>
-              ))}
+              {["length", "width", "height", "weight"].map((f, idx) => {
+                const placeholderMap = {
+                  length: "Length (cm)",
+                  width: "Width (cm)",
+                  height: "Height (cm)",
+                  weight: "Weight (kg)",
+                };
+
+                return (
+                  <div key={idx}>
+                    <label className="block text-sm font-medium mb-1 capitalize">
+                      {f}
+                    </label>
+                    <input
+                      type="number"
+                      name={f}
+                      value={pkg[f] || ""}
+                      onChange={(e) => handlePackageChange(i, e)}
+                      placeholder={placeholderMap[f]}
+                      className="form-input"
+                    />
+                  </div>
+                );
+              })}
+
               <div>
-                <label className="block text-sm font-medium mb-1">Vol. Weight</label>
+                <label className="block text-sm font-medium mb-1">
+                  Vol. Weight
+                </label>
                 <input
                   type="text"
                   name="volumetric_weight"
@@ -564,6 +709,7 @@ const handleSubmit = async (e) => {
                   readOnly
                 />
               </div>
+
               {formData.packages.length > 1 && (
                 <button
                   type="button"
@@ -578,7 +724,7 @@ const handleSubmit = async (e) => {
         </div>
 
         {/* Charges */}
-        <div className="col-span-2">
+        {/* <div className="col-span-2">
           <div className="flex justify-between mb-2">
             <h3 className="font-semibold">Charges</h3>
             <button type="button" onClick={addCharge} className="text-blue-600">
@@ -612,7 +758,193 @@ const handleSubmit = async (e) => {
               )}
             </div>
           ))}
+        </div> */}
+
+      {/* Charges Section */}
+<div className="col-span-2">
+  <div className="grid grid-cols-2 gap-6">
+    {/* Left Column - Freight Charges */}
+    <div>
+      <div className="flex justify-between mb-2">
+        <h4 className="font-semibold text-gray-700">Freight Charges</h4>
+        <button
+          type="button"
+          onClick={() =>
+            setFormData((prev) => ({
+              ...prev,
+              charges: [
+                ...prev.charges,
+                { charge_name: "", type: "Freight", amount: 0, description: "" },
+              ],
+            }))
+          }
+          className="text-blue-600 text-sm"
+        >
+          + Add 
+        </button>
+      </div>
+
+      {formData.charges.map((chg, i) => (
+        <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
+            <input
+              type="text"
+              name="charge_name"
+              value={chg.charge_name || ""}
+              onChange={(e) => handleChargeChange(i, e)}
+              className="form-input"
+              placeholder="Charge Name"
+            />
+          </div>
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Type</label> */}
+            <input
+              type="text"
+              name="type"
+              value={chg.type || ""}
+              onChange={(e) => handleChargeChange(i, e)}
+              className="form-input"
+              placeholder="Type"
+            />
+          </div>
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
+            <input
+              type="number"
+              name="amount"
+              value={chg.amount || 0}
+              onChange={(e) => handleChargeChange(i, e)}
+              className="form-input"
+            />
+          </div>
+          {/* <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <input
+              type="text"
+              name="description"
+              value={chg.description || ""}
+              onChange={(e) => handleChargeChange(i, e)}
+              className="form-input"
+            />
+          </div> */}
+
+          {/* Show delete only for rows added after first 3 */}
+          {i > 2 && (
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  charges: prev.charges.filter((_, idx) => idx !== i),
+                }))
+              }
+              className="text-red-600 text-sm"
+            >
+              Remove
+            </button>
+          )}
         </div>
+      ))}
+    </div>
+
+    {/* Right Column - Destination Charges */}
+    <div>
+      <div className="flex justify-between mb-2">
+        <h4 className="font-semibold text-gray-700">Destination Charges</h4>
+        <button
+          type="button"
+          onClick={() =>
+            setFormData((prev) => ({
+              ...prev,
+              destination_charges: [
+                ...(prev.destination_charges || []),
+                {
+                  charge_name: "",
+                  type: "Destination",
+                  amount: 0,
+                  description: "",
+                },
+              ],
+            }))
+          }
+          className="text-blue-600 text-sm"
+        >
+          + Add 
+        </button>
+      </div>
+
+      {(formData.destination_charges || []).map((chg, i) => (
+        <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
+            <input
+              type="text"
+              name="charge_name"
+              value={chg.charge_name || ""}
+              onChange={(e) => handleDestinationChargeChange(i, e)}
+              className="form-input"
+              placeholder="Charge Name"
+            />
+          </div>
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Type</label> */}
+            <input
+              type="text"
+              name="type"
+              value={chg.type || ""}
+              onChange={(e) => handleDestinationChargeChange(i, e)}
+              className="form-input"
+              
+            />
+          </div>
+          <div>
+            {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
+            <input
+  type="number"
+  name="amount"
+  value={chg.amount === 0 ? 0 : chg.amount || ""}
+  onChange={(e) => handleDestinationChargeChange(i, e)} // ✅ Correct handler
+  className="form-input"
+/>
+
+          </div>
+          {/* <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <input
+              type="text"
+              name="description"
+              value={chg.description || ""}
+              onChange={(e) => handleDestinationChargeChange(i, e)}
+              className="form-input"
+            />
+          </div> */}
+
+          {/* Show delete only for rows after first 3 */}
+          {i > 2 && (
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  destination_charges: prev.destination_charges.filter(
+                    (_, idx) => idx !== i
+                  ),
+                }))
+              }
+              className="text-red-600 text-sm"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+
+
 
         {/* Submit */}
         <div className="col-span-2 flex justify-end mt-4">

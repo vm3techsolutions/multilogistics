@@ -3,21 +3,27 @@ import { useSelector, useDispatch } from "react-redux";
 import { logout } from "@/store/slices/authSlice";
 import { Bell, User } from "lucide-react";
 import { useState, useEffect, useState as useReactState } from "react";
+import { useRouter } from "next/navigation"; // ✅ Import Next.js router
 
 const Topbar = () => {
   const { isAuthenticated, username } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const router = useRouter(); // ✅ Initialize router
   const [open, setOpen] = useState(false);
 
-  // 👇 Add this to make sure we render only after client is ready
   const [mounted, setMounted] = useReactState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null; // avoid mismatch
-
+  if (!mounted) return null;
   if (!isAuthenticated) return null;
+
+  // ✅ Handle logout
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push("/"); // Redirect to login page after logout
+  };
 
   return (
     <div className="flex justify-between items-center bg-white border-b border-gray-300 px-12 py-3">
@@ -35,7 +41,7 @@ const Topbar = () => {
             <div className="absolute z-9 right-0 w-40 bg-white border rounded-lg shadow-lg">
               <p className="px-4 py-2 text-gray-700 border-b">👋 {username}</p>
               <button
-                onClick={() => dispatch(logout())}
+                onClick={handleLogout}
                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
               >
                 Logout

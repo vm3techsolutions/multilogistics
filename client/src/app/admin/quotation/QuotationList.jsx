@@ -82,29 +82,41 @@ const QuotationList = () => {
     }
   };
 
-  // ✅ Handle Email Sending
+  // Handle Send Email
+
   const handleSendEmail = async (q) => {
-    if (!window.confirm("Send quotation email?")) return;
+  if (!window.confirm("Send quotation email?")) return;
 
-    try {
-      // Trigger the email via Redux action
-      const response = await dispatch(triggerQuotationEmail(q.id)).unwrap();
+  try {
+    const response = await dispatch(triggerQuotationEmail(q.id)).unwrap();
 
-      if (response?.success) {
-        toast.success(response?.message || "Quotation email sent successfully 📧");
+    if (response?.success) {
+      toast.success(response?.message || "Quotation email sent successfully 📧");
 
-        // Optimistically update the quotation status locally
-        dispatch(getAllQuotations()); // refresh the list to reflect any backend changes
-      } else {
-        toast.warn(response.message || "Email might not have been sent ⚠️");
+      // ✅ Wait for backend email completion before changing status
+      await new Promise((res) => setTimeout(res, 500)); // small delay to ensure sync
+
+      // ✅ Explicitly update the status to "draft" after email
+      const updateRes = await dispatch(
+        updateQuotationStatus({ id: q.id, status: "draft" })
+      ).unwrap();
+
+      if (updateRes?.success || updateRes?.message) {
+        toast.info("Quotation status changed to Draft 📝");
       }
-    } catch (err) {
-      console.error("Email send failed:", err);
-      const errorMsg =
-        err?.response?.data?.message || err?.message || "Failed to send email ❌";
-      toast.error(errorMsg);
+
+      // ✅ Force-refresh quotations after status update
+      await dispatch(getAllQuotations()).unwrap();
+    } else {
+      toast.warn(response.message || "Email might not have been sent ⚠️");
     }
-  };
+  } catch (err) {
+    console.error("Email send failed:", err);
+    const errorMsg =
+      err?.response?.data?.message || err?.message || "Failed to send email ❌";
+    toast.error(errorMsg);
+  }
+};
 
 
   // ✅ Filter quotations by search
@@ -378,9 +390,14 @@ const QuotationList = () => {
                 </button>
               </div>
               <Quotation
-                existingQuotation={editingQuotation}
-                onClose={handleCloseEdit}
-              />
+  existingQuotation={editingQuotation}
+  onClose={handleCloseEdit}
+  onSuccess={() => {
+    // ✅ Refresh the quotations immediately after successful update
+    dispatch(getAllQuotations());
+  }}
+/>
+
             </div>
           </div>
         )}
