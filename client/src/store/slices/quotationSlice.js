@@ -1,19 +1,16 @@
-// src/redux/slices/quotationSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/api/axiosInstance";
-import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api";
 
 /* -------------------------------------------------------------------------- */
-/* ✅ New Features: Fetch all quotations + Fetch by number (with token)       */
+/* ✅ Fetch All & Fetch by Number                                             */
 /* -------------------------------------------------------------------------- */
 export const fetchAllQuotations = createAsyncThunk(
   "quotation/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_BASE_URL}/getAllQuotations`, {
+      const res = await axiosInstance.get(`/getAllQuotations`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return res.data.data || [];
@@ -30,8 +27,8 @@ export const fetchQuotationByNumber = createAsyncThunk(
   async (quote_no, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `${API_BASE_URL}/number/${encodeURIComponent(quote_no)}`,
+      const res = await axiosInstance.get(
+        `/number/${encodeURIComponent(quote_no)}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -46,15 +43,30 @@ export const fetchQuotationByNumber = createAsyncThunk(
 );
 
 /* -------------------------------------------------------------------------- */
-/* ✅ Existing CRUD Features                                                  */
+/* ✅ Create Quotation (merged charges)                                       */
 /* -------------------------------------------------------------------------- */
-
-// ✅ Create quotation
 export const createQuotation = createAsyncThunk(
   "quotation/createQuotation",
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post("/createQuotation", formData);
+      // 🔹 Merge freight & destination visually separated charges
+      const combinedCharges = [
+        ...(formData.charges || []),
+        ...(formData.destination_charges || []),
+      ].map((item) => ({
+        charge_name: item.charge_name,
+        type: item.type,
+        amount: item.amount,
+      }));
+
+      const payload = {
+        ...formData,
+        charges: combinedCharges,
+      };
+
+      delete payload.destination_charges;
+
+      const response = await axiosInstance.post("/createQuotation", payload);
       return response.data;
     } catch (err) {
       return rejectWithValue(
@@ -64,7 +76,9 @@ export const createQuotation = createAsyncThunk(
   }
 );
 
-// ✅ Get all quotations
+/* -------------------------------------------------------------------------- */
+/* ✅ Get All, Get by ID, Update, Approve, Email                              */
+/* -------------------------------------------------------------------------- */
 export const getAllQuotations = createAsyncThunk(
   "quotation/getAllQuotations",
   async (_, { rejectWithValue }) => {
@@ -79,7 +93,6 @@ export const getAllQuotations = createAsyncThunk(
   }
 );
 
-// ✅ Get quotation by ID
 export const getQuotationById = createAsyncThunk(
   "quotation/getQuotationById",
   async (id, { rejectWithValue }) => {
@@ -94,12 +107,28 @@ export const getQuotationById = createAsyncThunk(
   }
 );
 
-// ✅ Update quotation
 export const updateQuotation = createAsyncThunk(
   "quotation/updateQuotation",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/updateQuotation/${id}`, data);
+      // 🔹 Merge freight & destination charges for updates too
+      const combinedCharges = [
+        ...(data.charges || []),
+        ...(data.destination_charges || []),
+      ].map((item) => ({
+        charge_name: item.charge_name,
+        type: item.type,
+        amount: item.amount,
+      }));
+
+      const payload = {
+        ...data,
+        charges: combinedCharges,
+      };
+
+      delete payload.destination_charges;
+
+      const response = await axiosInstance.put(`/updateQuotation/${id}`, payload);
       return response.data;
     } catch (err) {
       return rejectWithValue(
@@ -109,7 +138,6 @@ export const updateQuotation = createAsyncThunk(
   }
 );
 
-// ✅ Update quotation status (approve / reject)
 export const updateQuotationStatus = createAsyncThunk(
   "quotation/updateQuotationStatus",
   async ({ id, status }, { rejectWithValue }) => {
@@ -126,7 +154,6 @@ export const updateQuotationStatus = createAsyncThunk(
   }
 );
 
-// ✅ Trigger quotation email
 export const triggerQuotationEmail = createAsyncThunk(
   "quotation/triggerQuotationEmail",
   async (id, { rejectWithValue }) => {
@@ -142,7 +169,7 @@ export const triggerQuotationEmail = createAsyncThunk(
 );
 
 /* -------------------------------------------------------------------------- */
-/* ✅ Slice                                                                  */
+/* ✅ Slice Definition                                                        */
 /* -------------------------------------------------------------------------- */
 const quotationSlice = createSlice({
   name: "quotation",
@@ -173,7 +200,7 @@ const quotationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      /* ------------------ New fetchAll / fetchByNumber ------------------ */
+      /* ------------------ Fetch ------------------ */
       .addCase(fetchAllQuotations.pending, (state) => {
         state.loading = true;
       })
@@ -197,7 +224,7 @@ const quotationSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* --------------------------- Create --------------------------- */
+      /* ------------------ Create ------------------ */
       .addCase(createQuotation.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -215,10 +242,9 @@ const quotationSlice = createSlice({
         state.success = false;
       })
 
-      /* --------------------------- Get All --------------------------- */
+      /* ------------------ Get All ------------------ */
       .addCase(getAllQuotations.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(getAllQuotations.fulfilled, (state, action) => {
         state.loading = false;
@@ -231,10 +257,9 @@ const quotationSlice = createSlice({
           action.payload?.message || "Failed to fetch quotations";
       })
 
-      /* --------------------------- Get by ID --------------------------- */
+      /* ------------------ Get by ID ------------------ */
       .addCase(getQuotationById.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(getQuotationById.fulfilled, (state, action) => {
         state.loading = false;
@@ -244,20 +269,17 @@ const quotationSlice = createSlice({
       .addCase(getQuotationById.rejected, (state, action) => {
         state.loading = false;
         state.error =
-          action.payload?.message || "Failed to fetch the quotation";
+          action.payload?.message || "Failed to fetch quotation";
       })
 
-      /* --------------------------- Update --------------------------- */
+      /* ------------------ Update ------------------ */
       .addCase(updateQuotation.pending, (state) => {
         state.loading = true;
-        state.error = null;
-        state.success = false;
       })
       .addCase(updateQuotation.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         state.lastUpdated = action.payload.data || null;
-
         const index = state.quotations.findIndex(
           (q) => q.id === action.payload.data?.id
         );
@@ -269,33 +291,28 @@ const quotationSlice = createSlice({
         state.loading = false;
         state.error =
           action.payload?.message || "Failed to update quotation";
-        state.success = false;
       })
 
-      /* --------------------------- Update Status --------------------------- */
+      /* ------------------ Status Update ------------------ */
       .addCase(updateQuotationStatus.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(updateQuotationStatus.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         const { quotationId, status } = action.payload.data;
         const index = state.quotations.findIndex((q) => q.id === quotationId);
-        if (index !== -1) {
-          state.quotations[index].status = status;
-        }
+        if (index !== -1) state.quotations[index].status = status;
       })
       .addCase(updateQuotationStatus.rejected, (state, action) => {
         state.loading = false;
         state.error =
-          action.payload?.message || "Failed to update quotation status";
+          action.payload?.message || "Failed to update status";
       })
 
-      /* --------------------------- Send Email --------------------------- */
+      /* ------------------ Email ------------------ */
       .addCase(triggerQuotationEmail.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(triggerQuotationEmail.fulfilled, (state, action) => {
         state.loading = false;
@@ -305,9 +322,7 @@ const quotationSlice = createSlice({
         const quotationId = action.payload.data?.quotationId;
         if (quotationId) {
           const index = state.quotations.findIndex((q) => q.id === quotationId);
-          if (index !== -1) {
-            state.quotations[index].status = "pending";
-          }
+          if (index !== -1) state.quotations[index].status = "pending";
         }
       })
       .addCase(triggerQuotationEmail.rejected, (state, action) => {
@@ -322,4 +337,3 @@ export const { resetQuotationState, clearSelectedQuotation } =
   quotationSlice.actions;
 
 export default quotationSlice.reducer;
-

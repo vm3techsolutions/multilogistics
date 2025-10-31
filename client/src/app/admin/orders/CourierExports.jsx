@@ -4,9 +4,13 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourierExports, setPage } from "@/store/slices/courierExportSlice";
 import CreateCourierExport from "./CreateCourierExport";
+import { Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function CourierExports() {
   const dispatch = useDispatch();
+  const router = useRouter();
+
   const { list = [], loading, error, currentPage = 1, perPage = 10 } = useSelector(
     (state) => state.courierExports || {}
   );
@@ -48,6 +52,7 @@ export default function CourierExports() {
               <th className="border p-2">Document Type</th>
               <th className="border p-2">Items Count</th>
               <th className="border p-2">Amount</th>
+              <th className="border p-2 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -69,6 +74,16 @@ export default function CourierExports() {
                   <td className="border p-2">{exp.document_type}</td>
                   <td className="border p-2">{exp.items?.length || 0}</td>
                   <td className="border p-2">{exp.amount}</td>
+
+                  <td className="border p-2 text-center">
+                    <button
+                      onClick={() => router.push(`/admin/orders/courier-exports/${exp.id}`)}
+                      className="p-2 text-blue-600 hover:text-blue-800"
+                      title="View Details"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -101,18 +116,18 @@ export default function CourierExports() {
 
       {/* Create Export Modal */}
       {showForm && (
-  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-    <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
-      <button
-        onClick={() => setShowForm(false)}
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
-      >
-        ✕
-      </button>
-      <CreateCourierExport onClose={() => setShowForm(false)} />
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-[90%] max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowForm(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ✕
+            </button>
+            <CreateCourierExport onClose={() => setShowForm(false)} />
+          </div>
+        </div>
+      )}
 
     </div>
   );
