@@ -69,7 +69,7 @@ export default function CustDetails() {
             className="bg-[#F7FCFE] pl-10 p-2 text-gray-700 rounded w-full focus:outline-none focus:ring-2 focus:ring-cyan-800"
           />
         </div>
-        <select
+        {/* <select
           className="bg-[#F7FCFE] px-4 py-3 rounded text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-800"
           value={statusFilter}
           onChange={(e) => {
@@ -81,7 +81,7 @@ export default function CustDetails() {
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
           <option value="pending">Pending</option>
-        </select>
+        </select> */}
       </div>
 
       {/* Customers Table Section */}
@@ -98,7 +98,7 @@ export default function CustDetails() {
         </div>
 
         {loading ? (
-          <p>Loading...</p>
+          <p className="text-gray-700">Loading...</p>
         ) : currentCustomers.length > 0 ? (
           <>
             <div className="overflow-x-auto">
@@ -180,7 +180,7 @@ export default function CustDetails() {
             )}
           </>
         ) : (
-          <p>No customers found.</p>
+          <p className="text-gray-700">No customers found.</p>
         )}
       </div>
 

@@ -97,17 +97,17 @@ export default function CourierExports() {
           <button
             disabled={currentPage === 1}
             onClick={() => dispatch(setPage(currentPage - 1))}
-            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 rounded disabled:opacity-50"
           >
             Previous
           </button>
-          <span>
+          <span className="text-gray-900">
             Page {currentPage} of {totalPages}
           </span>
           <button
             disabled={currentPage === totalPages}
             onClick={() => dispatch(setPage(currentPage + 1))}
-            className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 rounded disabled:opacity-50"
           >
             Next
           </button>

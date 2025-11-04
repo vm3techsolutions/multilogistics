@@ -505,7 +505,7 @@ useEffect(() => {
 
   return (
     <div className="max-w-full mx-auto p-6 bg-white rounded-xl shadow">
-      <h2 className="text-xl font-bold mb-4">
+      <h2 className="text-xl font-bold mb-4 text-gray-700">
         {isEditMode ? "Edit Quotation" : "Create Quotation"}
       </h2>
       {error && <p className="text-red-500 mb-2">{error}</p>}
