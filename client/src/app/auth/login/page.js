@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "@/store/slices/authSlice";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); 
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -46,17 +48,26 @@ export default function Login() {
           </div>
 
           {/* Password */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full rounded-lg border text-gray-700 border-[#33A6DB] p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+
+            {/* 👁️ Eye Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
 
           {/* Login Button */}
