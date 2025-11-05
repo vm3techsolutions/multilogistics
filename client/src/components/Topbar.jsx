@@ -4,6 +4,7 @@ import { logout } from "@/store/slices/authSlice";
 import { Bell, User } from "lucide-react";
 import { useState, useEffect, useState as useReactState } from "react";
 import { useRouter } from "next/navigation"; // ✅ Import Next.js router
+import Link from "next/link";
 
 const Topbar = () => {
   const { isAuthenticated, username } = useSelector((state) => state.auth);
@@ -27,7 +28,10 @@ const Topbar = () => {
 
   return (
     <div className="flex justify-between items-center bg-white border-b border-gray-300 px-12 py-3">
-      <h1 className="text-lg font-semibold primaryText">Admin Dashboard</h1>
+      <Link href="/admin/overview">
+        <h1 className="text-lg font-semibold primaryText">Admin Dashboard</h1>
+      </Link>
+      
 
       <div className="flex items-center space-x-4 relative">
         <Bell className="w-6 h-6 text-gray-600 cursor-pointer" />

@@ -52,13 +52,13 @@ const Quotation = ({ existingQuotation = null, onClose, onSuccess }) => {
       { length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 },
     ],
     charges: [
-  { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
-  { charge_name: "FSC", type: "freight", amount: 0, description: "" },
-  { charge_name: "Demo", type: "freight", amount: 0, description: "" },
-],
-destination_charges: [
-    { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
-  ],
+      { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
+      { charge_name: "FSC", type: "freight", amount: 0, description: "" },
+      { charge_name: "Demo", type: "freight", amount: 0, description: "" },
+    ],
+    destination_charges: [
+      { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
+    ],
   });
 
   useEffect(() => {
@@ -91,13 +91,13 @@ destination_charges: [
           { length: 0, width: 0, height: 0, weight: 0, volumetric_weight: 0 },
         ],
         charges: [
-  { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
-  { charge_name: "FSC", type: "freight", amount: 0, description: "" },
-  { charge_name: "Demo", type: "freight", amount: 0, description: "" },
-],
-destination_charges: [
-    { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
-  ],
+          { charge_name: "Courier Charges", type: "freight", amount: 0, description: "" },
+          { charge_name: "FSC", type: "freight", amount: 0, description: "" },
+          { charge_name: "Demo", type: "freight", amount: 0, description: "" },
+        ],
+        destination_charges: [
+          { charge_name: "Export Clearance Agency", type: "destination", amount: 0, description: "" },
+        ],
       });
 
       // Clear selected customer globally
@@ -114,48 +114,71 @@ destination_charges: [
 
 
   // Populate existing quotation
-useEffect(() => {
-  if (!existingQuotation) return;
+  useEffect(() => {
+    if (!existingQuotation) return;
 
-  setFormData((prev) => {
-    // Prevent reloading same quote multiple times
-    if (prev.quote_no === existingQuotation.quote_no) return prev;
+    if (isEditMode && existingQuotation?.customer_id && customers.length > 0) {
+      const customer = customers.find(c => c.id === existingQuotation.customer_id);
+      if (customer) {
+        setFormData(prev => ({
+          ...prev,
+          customer_id: customer.id,
+          customer_name: customer.name,   // ✅ show name in input
+          address: customer.address,
+        }));
+      }
+    }
 
-    const freightCharges =
-      existingQuotation.charges
-        ?.filter((chg) => chg.type?.toLowerCase() === "freight")
-        .map((chg) => ({
-          charge_name: chg.charge_name || "",
-          type: "freight",
-          amount: chg.amount || 0,
-          description: chg.description || "",
-        })) || [];
+    if (isEditMode && existingQuotation?.agent_id && agents.length > 0) {
+      const agent = agents.find(a => a.id === existingQuotation.agent_id);
+      if (agent) {
+        setFormData(prev => ({
+          ...prev,
+          agent_id: agent.id,
+          agent_name: agent.name,
+        }));
+      }
+    }
 
-    const destinationCharges =
-      existingQuotation.charges
-        ?.filter((chg) => chg.type?.toLowerCase() === "destination")
-        .map((chg) => ({
-          charge_name: chg.charge_name || "",
-          type: "destination",
-          amount: chg.amount || 0,
-          description: chg.description || "",
-        })) || [];
+    setFormData((prev) => {
+      // Prevent reloading same quote multiple times
+      if (prev.quote_no === existingQuotation.quote_no) return prev;
 
-    // ✅ Deduplicate destination charges
-    const uniqueDest = Array.from(
-      new Map(
-        destinationCharges.map((chg) => [
-          `${chg.charge_name.toLowerCase()}_${chg.type.toLowerCase()}`,
-          chg,
-        ])
-      ).values()
-    );
+      const freightCharges =
+        existingQuotation.charges
+          ?.filter((chg) => chg.type?.toLowerCase() === "freight")
+          .map((chg) => ({
+            charge_name: chg.charge_name || "",
+            type: "freight",
+            amount: chg.amount || 0,
+            description: chg.description || "",
+          })) || [];
 
-    // ✅ Ensure at least one destination charge exists
-    const finalDestination =
-      uniqueDest.length > 0
-        ? uniqueDest
-        : [
+      const destinationCharges =
+        existingQuotation.charges
+          ?.filter((chg) => chg.type?.toLowerCase() === "destination")
+          .map((chg) => ({
+            charge_name: chg.charge_name || "",
+            type: "destination",
+            amount: chg.amount || 0,
+            description: chg.description || "",
+          })) || [];
+
+      // ✅ Deduplicate destination charges
+      const uniqueDest = Array.from(
+        new Map(
+          destinationCharges.map((chg) => [
+            `${chg.charge_name.toLowerCase()}_${chg.type.toLowerCase()}`,
+            chg,
+          ])
+        ).values()
+      );
+
+      // ✅ Ensure at least one destination charge exists
+      const finalDestination =
+        uniqueDest.length > 0
+          ? uniqueDest
+          : [
             {
               charge_name: "Export Clearance Agency",
               type: "destination",
@@ -164,27 +187,24 @@ useEffect(() => {
             },
           ];
 
-    const updatedData = {
-      ...prev,
-      ...existingQuotation,
-      packages:
-        existingQuotation.packages?.map((pkg) => ({
-          length: pkg.length || 0,
-          width: pkg.width || 0,
-          height: pkg.height || 0,
-          weight: pkg.weight || 0,
-          volumetric_weight: pkg.volumetric_weight || 0,
-        })) || prev.packages,
-      charges: freightCharges.length ? freightCharges : prev.charges,
-      destination_charges: finalDestination,
-    };
+      const updatedData = {
+        ...prev,
+        ...existingQuotation,
+        packages:
+          existingQuotation.packages?.map((pkg) => ({
+            length: pkg.length || 0,
+            width: pkg.width || 0,
+            height: pkg.height || 0,
+            weight: pkg.weight || 0,
+            volumetric_weight: pkg.volumetric_weight || 0,
+          })) || prev.packages,
+        charges: freightCharges.length ? freightCharges : prev.charges,
+        destination_charges: finalDestination,
+      };
 
-    return updatedData;
-  });
-}, [existingQuotation]);
-
-
-
+      return updatedData;
+    });
+  }, [isEditMode, existingQuotation, customers, agents]);
 
   // Update customer selection
   // Auto-fill when creating a new quotation
@@ -214,8 +234,6 @@ useEffect(() => {
       }
     }
   }, [selectedCustomer, agents, existingQuotation]);
-
-
 
   // Generic input change
   const handleChange = (e) => {
@@ -260,8 +278,6 @@ useEffect(() => {
     setShowCustomerSuggestions(false);
   };
 
-
-
   // Agent input
   const handleAgentInput = (e) => {
     const value = e.target.value || "";
@@ -287,7 +303,6 @@ useEffect(() => {
     }));
     setShowAgentSuggestions(false);
   };
-
 
   // Package handlers
   const handlePackageChange = (index, e) => {
@@ -340,13 +355,12 @@ useEffect(() => {
   };
 
   const handleDestinationChargeChange = (index, e) => {
-  const { name, value } = e.target;
-  const updated = [...(formData.destination_charges || [])];
-  updated[index][name] =
-    name === "amount" ? (value === "" ? "" : parseFloat(value)) : value;
-  setFormData((prev) => ({ ...prev, destination_charges: updated }));
-};
-
+    const { name, value } = e.target;
+    const updated = [...(formData.destination_charges || [])];
+    updated[index][name] =
+      name === "amount" ? (value === "" ? "" : parseFloat(value)) : value;
+    setFormData((prev) => ({ ...prev, destination_charges: updated }));
+  };
 
   const addCharge = () =>
     setFormData((prev) => ({
@@ -365,137 +379,137 @@ useEffect(() => {
 
 
   // Submit
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // 🔹 Prepare packages
-  const packagesPayload = formData.packages.map((pkg) => ({
-    length: Number(pkg.length) || 0,
-    width: Number(pkg.width) || 0,
-    height: Number(pkg.height) || 0,
-    weight: Number(pkg.weight) || 0,
-    volumetric_weight: Number(pkg.volumetric_weight) || 0,
-  }));
+    // 🔹 Prepare packages
+    const packagesPayload = formData.packages.map((pkg) => ({
+      length: Number(pkg.length) || 0,
+      width: Number(pkg.width) || 0,
+      height: Number(pkg.height) || 0,
+      weight: Number(pkg.weight) || 0,
+      volumetric_weight: Number(pkg.volumetric_weight) || 0,
+    }));
 
-  // 🔹 Prepare charges (clean and distinct)
-  const freightCharges = (formData.charges || []).map((chg) => ({
-    charge_name: chg.charge_name || "",
-    type: "freight",
-    amount: Number(chg.amount) || 0,
-    description: chg.description || "",
-  }));
+    // 🔹 Prepare charges (clean and distinct)
+    const freightCharges = (formData.charges || []).map((chg) => ({
+      charge_name: chg.charge_name || "",
+      type: "freight",
+      amount: Number(chg.amount) || 0,
+      description: chg.description || "",
+    }));
 
-  const destinationCharges = (formData.destination_charges || []).map((chg) => ({
-    charge_name: chg.charge_name || "",
-    type: "destination",
-    amount: Number(chg.amount) || 0,
-    description: chg.description || "",
-  }));
+    const destinationCharges = (formData.destination_charges || []).map((chg) => ({
+      charge_name: chg.charge_name || "",
+      type: "destination",
+      amount: Number(chg.amount) || 0,
+      description: chg.description || "",
+    }));
 
-  // 🔹 Combine all charges freshly (no merging with old state)
-  const allCharges = [...freightCharges, ...destinationCharges];
+    // 🔹 Combine all charges freshly (no merging with old state)
+    const allCharges = [...freightCharges, ...destinationCharges];
 
-  // 🔹 Create payload
-  const payload = {
-    ...formData,
-    packages: packagesPayload,
-    charges: allCharges,
-  };
+    // 🔹 Create payload
+    const payload = {
+      ...formData,
+      packages: packagesPayload,
+      charges: allCharges,
+    };
 
-  try {
-    if (isEditMode) {
-      // 🔹 Update existing quotation (avoid duplication)
-      const resultAction = await dispatch(
-        updateQuotation({ id: existingQuotation.id, data: payload })
-      );
+    try {
+      if (isEditMode) {
+        // 🔹 Update existing quotation (avoid duplication)
+        const resultAction = await dispatch(
+          updateQuotation({ id: existingQuotation.id, data: payload })
+        );
 
-      if (updateQuotation.fulfilled.match(resultAction)) {
+        if (updateQuotation.fulfilled.match(resultAction)) {
 
-        const updatedQuotation = resultAction.payload;
+          const updatedQuotation = resultAction.payload;
 
-        // ✅ Immediately update local state to reflect changes
-        setFormData((prev) => ({
-          ...prev,
-          ...updatedQuotation,
-          charges: updatedQuotation.charges?.filter((c) => c.type === "freight") || [],
-          destination_charges:
-            updatedQuotation.charges?.filter((c) => c.type === "destination") || [],
-        }));
+          // ✅ Immediately update local state to reflect changes
+          setFormData((prev) => ({
+            ...prev,
+            ...updatedQuotation,
+            charges: updatedQuotation.charges?.filter((c) => c.type === "freight") || [],
+            destination_charges:
+              updatedQuotation.charges?.filter((c) => c.type === "destination") || [],
+          }));
 
-        // ✅ If you have parent update callback, call it
-        onSuccess?.(updatedQuotation);
+          // ✅ If you have parent update callback, call it
+          onSuccess?.(updatedQuotation);
 
-        Swal.fire({
-          icon: "success",
-          title: "Updated!",
-          text: "Quotation updated successfully ✅",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-        onSuccess?.(resultAction.payload);
-        onClose?.();
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Update Failed",
-          text:
-            resultAction.payload?.message ||
-            "Failed to update the quotation. Try again!",
-        });
-      }
-    } else {
-      // 🔹 Create new quotation
-      const resultAction = await dispatch(createQuotation(payload));
-
-      if (createQuotation.fulfilled.match(resultAction)) {
-
-        const createdQuotation = resultAction.payload;
-
-        // ✅ Update local state immediately for new entry
-        setFormData(createdQuotation);
-        onSuccess?.(createdQuotation);
-
-        Swal.fire({
-          icon: "success",
-          title: "Created!",
-          text: "Quotation created successfully ✅",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-        // onSuccess?.(resultAction.payload);
-        onClose?.();
-      } else {
-        // 🔸 Handle duplicate quotation or backend error
-        const errMsg =
-          resultAction.payload?.message ||
-          resultAction.error?.message ||
-          "Failed to create quotation";
-
-        if (errMsg.toLowerCase().includes("already") || errMsg.includes("exists")) {
           Swal.fire({
-            icon: "error",
-            title: "Duplicate Quotation!",
-            text:
-              "A quotation with this number or details already exists. Please check before creating again.",
+            icon: "success",
+            title: "Updated!",
+            text: "Quotation updated successfully ✅",
+            timer: 2000,
+            showConfirmButton: false,
           });
+          onSuccess?.(resultAction.payload);
+          onClose?.();
         } else {
           Swal.fire({
             icon: "error",
-            title: "Error!",
-            text: errMsg,
+            title: "Update Failed",
+            text:
+              resultAction.payload?.message ||
+              "Failed to update the quotation. Try again!",
           });
         }
+      } else {
+        // 🔹 Create new quotation
+        const resultAction = await dispatch(createQuotation(payload));
+
+        if (createQuotation.fulfilled.match(resultAction)) {
+
+          const createdQuotation = resultAction.payload;
+
+          // ✅ Update local state immediately for new entry
+          setFormData(createdQuotation);
+          onSuccess?.(createdQuotation);
+
+          Swal.fire({
+            icon: "success",
+            title: "Created!",
+            text: "Quotation created successfully ✅",
+            timer: 2000,
+            showConfirmButton: false,
+          });
+          // onSuccess?.(resultAction.payload);
+          onClose?.();
+        } else {
+          // 🔸 Handle duplicate quotation or backend error
+          const errMsg =
+            resultAction.payload?.message ||
+            resultAction.error?.message ||
+            "Failed to create quotation";
+
+          if (errMsg.toLowerCase().includes("already") || errMsg.includes("exists")) {
+            Swal.fire({
+              icon: "error",
+              title: "Duplicate Quotation!",
+              text:
+                "A quotation with this number or details already exists. Please check before creating again.",
+            });
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "Error!",
+              text: errMsg,
+            });
+          }
+        }
       }
+    } catch (err) {
+      console.error("Error saving quotation:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Unexpected Error!",
+        text: "Something went wrong while saving the quotation ❌",
+      });
     }
-  } catch (err) {
-    console.error("Error saving quotation:", err);
-    Swal.fire({
-      icon: "error",
-      title: "Unexpected Error!",
-      text: "Something went wrong while saving the quotation ❌",
-    });
-  }
-};
+  };
 
 
 
@@ -760,65 +774,65 @@ useEffect(() => {
           ))}
         </div> */}
 
-      {/* Charges Section */}
-<div className="col-span-2">
-  <div className="grid grid-cols-2 gap-6">
-    {/* Left Column - Freight Charges */}
-    <div>
-      <div className="flex justify-between mb-2">
-        <h4 className="font-semibold text-gray-700">Freight Charges</h4>
-        <button
-          type="button"
-          onClick={() =>
-            setFormData((prev) => ({
-              ...prev,
-              charges: [
-                ...prev.charges,
-                { charge_name: "", type: "Freight", amount: 0, description: "" },
-              ],
-            }))
-          }
-          className="text-blue-600 text-sm"
-        >
-          + Add 
-        </button>
-      </div>
+        {/* Charges Section */}
+        <div className="col-span-2">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Column - Freight Charges */}
+            <div>
+              <div className="flex justify-between mb-2">
+                <h4 className="font-semibold text-gray-700">Freight Charges</h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      charges: [
+                        ...prev.charges,
+                        { charge_name: "", type: "Freight", amount: 0, description: "" },
+                      ],
+                    }))
+                  }
+                  className="text-blue-600 text-sm"
+                >
+                  + Add
+                </button>
+              </div>
 
-      {formData.charges.map((chg, i) => (
-        <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
-            <input
-              type="text"
-              name="charge_name"
-              value={chg.charge_name || ""}
-              onChange={(e) => handleChargeChange(i, e)}
-              className="form-input"
-              placeholder="Charge Name"
-            />
-          </div>
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Type</label> */}
-            <input
-              type="text"
-              name="type"
-              value={chg.type || ""}
-              onChange={(e) => handleChargeChange(i, e)}
-              className="form-input"
-              placeholder="Type"
-            />
-          </div>
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
-            <input
-              type="number"
-              name="amount"
-              value={chg.amount || 0}
-              onChange={(e) => handleChargeChange(i, e)}
-              className="form-input"
-            />
-          </div>
-          {/* <div>
+              {formData.charges.map((chg, i) => (
+                <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
+                    <input
+                      type="text"
+                      name="charge_name"
+                      value={chg.charge_name || ""}
+                      onChange={(e) => handleChargeChange(i, e)}
+                      className="form-input"
+                      placeholder="Charge Name"
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Type</label> */}
+                    <input
+                      type="text"
+                      name="type"
+                      value={chg.type || ""}
+                      onChange={(e) => handleChargeChange(i, e)}
+                      className="form-input"
+                      placeholder="Type"
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
+                    <input
+                      type="number"
+                      name="amount"
+                      value={chg.amount || 0}
+                      onChange={(e) => handleChargeChange(i, e)}
+                      className="form-input"
+                    />
+                  </div>
+                  {/* <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <input
               type="text"
@@ -829,87 +843,87 @@ useEffect(() => {
             />
           </div> */}
 
-          {/* Show delete only for rows added after first 3 */}
-          {i > 2 && (
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  charges: prev.charges.filter((_, idx) => idx !== i),
-                }))
-              }
-              className="text-red-600 text-sm"
-            >
-              Remove
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
+                  {/* Show delete only for rows added after first 3 */}
+                  {i > 2 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          charges: prev.charges.filter((_, idx) => idx !== i),
+                        }))
+                      }
+                      className="text-red-600 text-sm"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
 
-    {/* Right Column - Destination Charges */}
-    <div>
-      <div className="flex justify-between mb-2">
-        <h4 className="font-semibold text-gray-700">Destination Charges</h4>
-        <button
-          type="button"
-          onClick={() =>
-            setFormData((prev) => ({
-              ...prev,
-              destination_charges: [
-                ...(prev.destination_charges || []),
-                {
-                  charge_name: "",
-                  type: "Destination",
-                  amount: 0,
-                  description: "",
-                },
-              ],
-            }))
-          }
-          className="text-blue-600 text-sm"
-        >
-          + Add 
-        </button>
-      </div>
+            {/* Right Column - Destination Charges */}
+            <div>
+              <div className="flex justify-between mb-2">
+                <h4 className="font-semibold text-gray-700">Destination Charges</h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      destination_charges: [
+                        ...(prev.destination_charges || []),
+                        {
+                          charge_name: "",
+                          type: "Destination",
+                          amount: 0,
+                          description: "",
+                        },
+                      ],
+                    }))
+                  }
+                  className="text-blue-600 text-sm"
+                >
+                  + Add
+                </button>
+              </div>
 
-      {(formData.destination_charges || []).map((chg, i) => (
-        <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
-            <input
-              type="text"
-              name="charge_name"
-              value={chg.charge_name || ""}
-              onChange={(e) => handleDestinationChargeChange(i, e)}
-              className="form-input"
-              placeholder="Charge Name"
-            />
-          </div>
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Type</label> */}
-            <input
-              type="text"
-              name="type"
-              value={chg.type || ""}
-              onChange={(e) => handleDestinationChargeChange(i, e)}
-              className="form-input"
-              
-            />
-          </div>
-          <div>
-            {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
-            <input
-  type="number"
-  name="amount"
-  value={chg.amount === 0 ? 0 : chg.amount || ""}
-  onChange={(e) => handleDestinationChargeChange(i, e)} // ✅ Correct handler
-  className="form-input"
-/>
+              {(formData.destination_charges || []).map((chg, i) => (
+                <div key={i} className="grid grid-cols-3 gap-2 mb-2 items-end">
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Charge Name</label> */}
+                    <input
+                      type="text"
+                      name="charge_name"
+                      value={chg.charge_name || ""}
+                      onChange={(e) => handleDestinationChargeChange(i, e)}
+                      className="form-input"
+                      placeholder="Charge Name"
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Type</label> */}
+                    <input
+                      type="text"
+                      name="type"
+                      value={chg.type || ""}
+                      onChange={(e) => handleDestinationChargeChange(i, e)}
+                      className="form-input"
 
-          </div>
-          {/* <div>
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-sm font-medium mb-1">Amount</label> */}
+                    <input
+                      type="number"
+                      name="amount"
+                      value={chg.amount === 0 ? 0 : chg.amount || ""}
+                      onChange={(e) => handleDestinationChargeChange(i, e)} // ✅ Correct handler
+                      className="form-input"
+                    />
+
+                  </div>
+                  {/* <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <input
               type="text"
@@ -920,31 +934,28 @@ useEffect(() => {
             />
           </div> */}
 
-          {/* Show delete only for rows after first 3 */}
-          {i > 2 && (
-            <button
-              type="button"
-              onClick={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  destination_charges: prev.destination_charges.filter(
-                    (_, idx) => idx !== i
-                  ),
-                }))
-              }
-              className="text-red-600 text-sm"
-            >
-              Remove
-            </button>
-          )}
+                  {/* Show delete only for rows after first 3 */}
+                  {i > 2 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          destination_charges: prev.destination_charges.filter(
+                            (_, idx) => idx !== i
+                          ),
+                        }))
+                      }
+                      className="text-red-600 text-sm"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</div>
-
-
-
 
         {/* Submit */}
         <div className="col-span-2 flex justify-end mt-4">
