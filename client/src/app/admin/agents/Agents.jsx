@@ -98,9 +98,9 @@ export default function Agents() {
         </div>
 
         {loading ? (
-          <p>Loading...</p>
+          <p className="text-gray-700">Loading...</p>
         ) : agents.length === 0 ? (
-          <p>No agents found.</p>
+          <p className="text-gray-700">No agents found.</p>
         ) : (
           <>
             <div className="overflow-x-auto">

@@ -420,7 +420,7 @@ const QuotationList = () => {
               {agents.length === 0 ? (
                 <p>Loading agents...</p>
               ) : (
-                <table className="w-full border-collapse border text-sm">
+                <table className="w-full border-collapse border text-sm text-gray-700 ">
                   <tbody>
                     {Object.entries(viewQuotation).map(([key, value]) => {
                       if (!value) return null;

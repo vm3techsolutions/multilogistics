@@ -69,7 +69,7 @@ export default function CourierExportDetails() {
       <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
         Shipper Details
       </h3>
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4 text-gray-700">
         <p>
           <strong>Name:</strong> {data.shipper_name}
         </p>
@@ -88,7 +88,7 @@ export default function CourierExportDetails() {
       <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
         Consignee Details
       </h3>
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4 text-gray-700">
         <p>
           <strong>Name:</strong> {data.consignee_name}
         </p>
@@ -107,7 +107,7 @@ export default function CourierExportDetails() {
       <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
         Shipment Info
       </h3>
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-4 mb-4 text-gray-700">
         <p>
           <strong>Place of Delivery:</strong> {data.place_of_delivery}
         </p>
@@ -130,7 +130,7 @@ export default function CourierExportDetails() {
         Items
       </h3>
       {data.items && data.items.length > 0 ? (
-        <table className="w-full border-collapse border border-gray-300 mb-6">
+        <table className="w-full border-collapse border border-gray-300 mb-6 text-gray-700">
           <thead className="bg-gray-100">
             <tr>
               <th className="border p-2">Name</th>
@@ -160,7 +160,7 @@ export default function CourierExportDetails() {
           <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
             Quotation Packages
           </h3>
-          <table className="w-full border-collapse border border-gray-300 mb-6">
+          <table className="w-full border-collapse border border-gray-300 mb-6 text-gray-700">
             <thead className="bg-gray-100">
               <tr>
                 <th className="border p-2">Length</th>
@@ -189,7 +189,7 @@ export default function CourierExportDetails() {
           <h3 className="font-semibold text-lg mb-2 text-gray-800 border-b pb-1">
             Quotation Charges
           </h3>
-          <table className="w-full border-collapse border border-gray-300">
+          <table className="w-full border-collapse border border-gray-300 text-gray-700">
             <thead className="bg-gray-100">
               <tr>
                 <th className="border p-2">Charge Name</th>
