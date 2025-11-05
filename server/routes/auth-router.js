@@ -5,7 +5,7 @@ const verifyToken = require('../middleware/auth');
 
 const adminController = require('../controller/adminController/adminController');
 const agentController = require('../controller/agentController/agentController');
-const { createCustomer, getCustomers, getCustomerById  } = require('../controller/customerController/customerController');
+const { createCustomer, getCustomers, getCustomerById, editCustomer, updateCustomerStatus  } = require('../controller/customerController/customerController');
 const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
 //const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuoteNo, updateQuotation } = require('../controller/quotationController/quotationController');
@@ -25,6 +25,7 @@ router.get('/get-admin/:id', verifyToken, adminController.getAdminData);
 router.post('/addAgent', verifyToken, agentController.createAgent); // Create Agent
 router.get('/getAgents',agentController.getAllAgents);
 router.put('/editAgent/:id', verifyToken, agentController.editAgent)
+router.put('/updateAgentStatus/:id', verifyToken, agentController.updateAgentStatus);
 
 // Customer Routes
 router.post('/addCustomer', verifyToken, createCustomer);
@@ -32,6 +33,8 @@ router.post('/addCustomer', verifyToken, createCustomer);
 // Get all customers
 router.get('/getCustomers', verifyToken, getCustomers);
 router.get("/get-customer/:id", verifyToken, getCustomerById); 
+router.put('/editCustomer/:id', verifyToken, editCustomer);
+router.put('/updateCustomerStatus/:id', verifyToken, updateCustomerStatus);
 
 // Quotation Routes
 router.post('/createQuotation', verifyToken, createQuotation);

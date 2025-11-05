@@ -137,8 +137,54 @@ const getAllAgents = async (req, res) => {
   }
 };
 
+const updateAgentStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body; // expect true or false
+
+  if (!id) return res.status(400).json({ message: "Agent ID is required" });
+  if (typeof status !== "boolean")
+    return res.status(400).json({ message: "Status must be true or false" });
+
+  try {
+    // Check if agent exists
+    const checkSql = `SELECT * FROM agents WHERE id = $1`;
+    const existing = await db.query(checkSql, [id]);
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ message: "Agent not found" });
+    }
+
+    const currentStatus = existing.rows[0].is_active;
+
+    // ✅ Prevent duplicate status update
+    if (currentStatus === status) {
+      return res.status(400).json({
+        message: `Agent is already ${status ? "Active" : "Inactive"}`,
+      });
+    }
+
+    // ✅ Update status
+    const updateSql = `
+      UPDATE agents
+      SET is_active = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING *;
+    `;
+    const result = await db.query(updateSql, [status, id]);
+
+    res.status(200).json({
+      message: `Agent status updated to ${status ? "Active" : "Inactive"}`,
+      agent: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Update Agent Status Error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 module.exports = {
   createAgent,
   getAllAgents,
-  editAgent
+  editAgent,
+  updateAgentStatus
 };
