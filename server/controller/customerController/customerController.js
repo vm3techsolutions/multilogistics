@@ -167,6 +167,18 @@ const editCustomer = async (req, res) => {
   const { id } = req.params;
   const { name, company_name, email, phone, address } = req.body;
 
+  // Parse document types — handle JSON or array
+  let document_types = [];
+  try {
+    document_types = JSON.parse(req.body.document_type); // e.g. '["PAN", "GST"]'
+  } catch {
+    if (Array.isArray(req.body.document_type)) {
+      document_types = req.body.document_type;
+    } else if (req.body.document_type) {
+      document_types = [req.body.document_type];
+    }
+  }
+
   if (!id) return res.status(400).json({ message: "Customer ID is required" });
 
   try {
@@ -192,10 +204,42 @@ const editCustomer = async (req, res) => {
     `;
     const result = await db.query(updateSql, [name, company_name, email, phone, address, id]);
 
-    res.status(200).json({
+    // kyc edit
+    const updatedCustomer = result.rows[0];
+    let uploadedDocs = [];
+
+    // ✅ Handle multiple documents
+    if (req.files && req.files.length > 0 && document_types.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const docType = document_types[i] || `document_${i + 1}`;
+
+        // Create mock request to reuse KYC upload logic
+        const mockReq = {
+          ...req,
+          file, // Single file
+          body: { document_type: docType },
+          params: { id }
+        };
+
+        try {
+          const kycData = await kycController.uploadKycDocument(mockReq);
+          uploadedDocs.push(kycData);
+        } catch (err) {
+          console.error(`KYC upload failed for ${docType}:`, err.message);
+        }
+      }
+    }
+
+    return res.status(200).json({
       message: "Customer updated successfully",
-      customer: result.rows[0],
+      customer: updatedCustomer,
+      uploaded_docs: uploadedDocs.length ? uploadedDocs : null,
     });
+    // res.status(200).json({
+    //   message: "Customer updated successfully",
+    //   customer: result.rows[0],
+    // });
   } catch (err) {
     console.error("Edit Customer Error:", err);
     res.status(500).json({ message: "Server error", error: err.message });

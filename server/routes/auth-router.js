@@ -35,7 +35,7 @@ router.post('/addCustomer', verifyToken, upload.array("document"), createCustome
 // Get all customers
 router.get('/getCustomers', verifyToken, getCustomers);
 router.get("/get-customer/:id", verifyToken, getCustomerById); 
-router.put('/editCustomer/:id', verifyToken, editCustomer);
+router.put('/editCustomer/:id', verifyToken,upload.array("document"), editCustomer);
 router.put('/updateCustomerStatus/:id', verifyToken, updateCustomerStatus);
 
 // customer KYC Routes
