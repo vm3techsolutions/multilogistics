@@ -12,6 +12,8 @@ const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuot
 const quotationStatusController = require('../controller/quotationController/approveQuotation');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
+const upload = require("../config/multer");
+const kycController = require("../controller/customerController/kycController");
 
 // Admin Signup Route
 router.post('/signup', adminController.adminSignUp);
@@ -35,6 +37,10 @@ router.get('/getCustomers', verifyToken, getCustomers);
 router.get("/get-customer/:id", verifyToken, getCustomerById); 
 router.put('/editCustomer/:id', verifyToken, editCustomer);
 router.put('/updateCustomerStatus/:id', verifyToken, updateCustomerStatus);
+
+// customer KYC Routes
+router.post("/kyc/upload/:id",verifyToken,upload.single("document"),kycController.uploadKycDocument);
+router.get("/kyc/:id", verifyToken, kycController.getMyKycDocuments);
 
 // Quotation Routes
 router.post('/createQuotation', verifyToken, createQuotation);
