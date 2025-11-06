@@ -34,7 +34,7 @@ const Topbar = () => {
       
 
       <div className="flex items-center space-x-4 relative">
-        <Bell className="w-6 h-6 text-gray-600 cursor-pointer" />
+        {/* <Bell className="w-6 h-6 text-gray-600 cursor-pointer" /> */}
         <div
           className="relative"
           onMouseEnter={() => setOpen(true)}
@@ -44,6 +44,7 @@ const Topbar = () => {
           {open && (
             <div className="absolute z-9 right-0 w-40 bg-white border rounded-lg shadow-lg">
               <p className="px-4 py-2 text-gray-700 border-b">👋 {username}</p>
+              {/* <p classname="px-4 py-2 text-gray-700 border-b">Dashboard</p> */}
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
