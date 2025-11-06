@@ -1,4 +1,5 @@
 const db = require('../../config/db');
+const kycController = require('../customerController/kycController');
 
 /**
  * Creates a new customer in the database.
@@ -26,7 +27,19 @@ const db = require('../../config/db');
 const createCustomer = async (req, res) => {
   const { name, company_name, email, phone, address } = req.body;
 
-  if (!name || !company_name || !email || !phone || !address) {
+   // Parse document types — it may come as stringified JSON or array
+  let document_types = [];
+  try {
+    document_types = JSON.parse(req.body.document_type); // e.g. '["PAN", "GST"]'
+  } catch {
+    if (Array.isArray(req.body.document_type)) {
+      document_types = req.body.document_type;
+    } else if (req.body.document_type) {
+      document_types = [req.body.document_type];
+    }
+  }
+
+  if (!name || !company_name || !email || !phone || !address ) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -48,9 +61,62 @@ const createCustomer = async (req, res) => {
       name, company_name, email, phone, address
     ]);
 
+    // return res.status(201).json({
+    //   message: 'Customer created successfully',
+    //   customer: result.rows[0],
+    // });
+
+    //
+    //merge kyc logic here
+    const customer = result.rows[0];
+    // If KYC file is uploaded, call existing function
+
+    //handle single kyc upload
+    // let kycData = null;
+
+    // if (req.file && document_type) {
+    //   req.params.id = customer.id;
+    //   try {
+    //     kycData = await kycController.uploadKycDocument(req);
+    //   } catch (err) {
+    //     console.error("KYC Upload Failed (but customer created):", err.message);
+    //   }
+    // }
+
+    // return res.status(201).json({
+    //   message: 'Customer created successfully',
+    //   customer,
+    //   kyc: kycData ? { message: "KYC uploaded successfully", ...kycData } : null,
+    // });
+    let uploadedDocs = [];
+
+    // ✅ Handle multiple documents
+    if (req.files && req.files.length > 0 && document_types.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const docType = document_types[i] || `document_${i + 1}`;
+
+        // Create mock request to reuse KYC upload logic
+        const mockReq = {
+          ...req,
+          file, // Single file
+          body: { document_type: docType },
+          params: { id: customer.id }
+        };
+
+        try {
+          const kycData = await kycController.uploadKycDocument(mockReq);
+          uploadedDocs.push(kycData);
+        } catch (err) {
+          console.error(`KYC upload failed for ${docType}:`, err.message);
+        }
+      }
+    }
+
     return res.status(201).json({
-      message: 'Customer created successfully',
-      customer: result.rows[0],
+      message: "Customer created successfully",
+      customer,
+      uploaded_docs: uploadedDocs.length ? uploadedDocs : null,
     });
 
   } catch (err) {

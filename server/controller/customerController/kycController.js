@@ -102,12 +102,19 @@ const uploadKycDocument = async (req, res) => {
 
     const signedUrl = await generateSignedUrl(fileUrl);
 
-    return res.status(201).json({
+    // return res.status(201).json({
+    //   message: "KYC document uploaded successfully",
+    //   document_type,
+    //   file_url: fileUrl,
+    //   signed_url: signedUrl,
+    // });
+    return {
+      success: true,
       message: "KYC document uploaded successfully",
       document_type,
       file_url: fileUrl,
       signed_url: signedUrl,
-    });
+    };
   } catch (err) {
     console.error("Upload KYC Document Error:", err);
     res.status(500).json({ message: "Server error", error: err.message });

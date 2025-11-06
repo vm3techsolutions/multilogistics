@@ -30,7 +30,7 @@ router.put('/editAgent/:id', verifyToken, agentController.editAgent)
 router.put('/updateAgentStatus/:id', verifyToken, agentController.updateAgentStatus);
 
 // Customer Routes
-router.post('/addCustomer', verifyToken, createCustomer);
+router.post('/addCustomer', verifyToken, upload.array("document"), createCustomer);
 
 // Get all customers
 router.get('/getCustomers', verifyToken, getCustomers);
