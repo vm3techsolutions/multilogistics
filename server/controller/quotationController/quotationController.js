@@ -7,7 +7,7 @@ async function generateQuoteNumber() {
     `SELECT quote_no FROM courier_export_quotations
      WHERE DATE(created_at) = $1
      ORDER BY id DESC
-     LIMIT 1`, 
+     LIMIT 1`,
     [today]
   );
 
@@ -27,6 +27,153 @@ const sanitizeNumber = (value) => {
   return isNaN(value) ? null : Number(value);
 };
 
+// const createQuotation = async (req, res) => {
+//   const client = await pool.connect();
+//   try {
+//     const {
+//       subject,
+//       customer_id,
+//       agent_id,
+//       address,
+//       origin,
+//       destination,
+//       actual_weight,
+//       created_by,
+//       packages = [], // array of { length, width, height, weight }
+//       charges = []   // array of { charge_name, type, amount, description }
+//     } = req.body;
+
+//     // ✅ Validation for required fields
+//     const errors = [];
+
+//     if (!subject || subject.trim() === '') {
+//       errors.push('Subject is required');
+//     }
+
+//     if (!customer_id || sanitizeNumber(customer_id) === null) {
+//       errors.push('Customer ID is required and must be a valid number');
+//     }
+
+//     if (!agent_id || sanitizeNumber(agent_id) === null) {
+//       errors.push('Agent ID is required and must be a valid number');
+//     }
+
+//     if (!address || address.trim() === '') {
+//       errors.push('Address is required');
+//     }
+
+//     if (!origin || origin.trim() === '') {
+//       errors.push('Origin is required');
+//     }
+
+//     if (!destination || destination.trim() === '') {
+//       errors.push('Destination is required');
+//     }
+
+//     if (!actual_weight || sanitizeNumber(actual_weight) === null || sanitizeNumber(actual_weight) <= 0) {
+//       errors.push('Actual weight is required and must be a positive number');
+//     }
+
+//     // Return validation errors if any
+//     if (errors.length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Validation failed',
+//         errors: errors
+//       });
+//     }
+
+//     // Auto-calculate volume weight
+//     const volumeFactor = 5000; // adjust as needed
+//     let totalVolumeWeight = packages.reduce((sum, pkg) => {
+//       const l = sanitizeNumber(pkg.length) || 0;
+//       const w = sanitizeNumber(pkg.width) || 0;
+//       const h = sanitizeNumber(pkg.height) || 0;
+//       return sum + (l * w * h) / volumeFactor;
+//     }, 0);
+
+//     const packages_count = packages.length;
+
+//     // Step 1: Generate quote number
+//     const quote_no = await generateQuoteNumber();
+
+//     await client.query('BEGIN');
+
+//     // Step 2: Insert into quotations
+//     const insertQuotationQuery = `
+//       INSERT INTO courier_export_quotations 
+//       (quote_no, subject, customer_id, agent_id, address, origin, destination, actual_weight, volume_weight, packages_count, created_by, created_at, updated_at)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+//       RETURNING id
+//     `;
+//     const quotationValues = [
+//       quote_no,
+//       subject || null,
+//       sanitizeNumber(customer_id),
+//       sanitizeNumber(agent_id),
+//       address || null,
+//       origin || null,
+//       destination || null,
+//       sanitizeNumber(actual_weight),
+//       sanitizeNumber(totalVolumeWeight),
+//       sanitizeNumber(packages_count),
+//       sanitizeNumber(created_by)
+//     ];
+//     const quotationResult = await client.query(insertQuotationQuery, quotationValues);
+//     const quotationId = quotationResult.rows[0].id;
+
+//     // Step 3: Insert packages
+//     for (let pkg of packages) {
+//       if (pkg.length || pkg.width || pkg.height || pkg.weight) {
+//       await client.query(
+//         `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
+//          VALUES ($1, $2, $3, $4, $5)`,
+//         [
+//           quotationId,
+//           sanitizeNumber(pkg.length),
+//           sanitizeNumber(pkg.width),
+//           sanitizeNumber(pkg.height),
+//           sanitizeNumber(pkg.weight)
+//         ]
+//       );
+//     }
+//     }
+
+//     // Step 4: Insert charges
+//     for (let chg of charges) {
+//       if (chg.charge_name || chg.amount) {
+//       await client.query(
+//         `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
+//          VALUES ($1, $2, $3, $4, $5)`,
+//         [
+//           quotationId,
+//           chg.charge_name || null,
+//           chg.type || null,
+//           sanitizeNumber(chg.amount),
+//           chg.description || null
+//         ]
+//       );
+//     }
+//     }
+
+//     await client.query('COMMIT');
+
+//     res.json({
+//       success: true,
+//       message: "Quotation created successfully",
+//       data: { quotationId, quote_no, totalVolumeWeight, packages_count }
+//     });
+
+//   } catch (error) {
+//     await client.query('ROLLBACK');
+//     console.error(error);
+//     res.status(500).json({ success: false, message: "Error creating quotation", error: error.message });
+//   } finally {
+//     client.release();
+//   }
+// };
+
+
 const createQuotation = async (req, res) => {
   const client = await pool.connect();
   try {
@@ -39,37 +186,36 @@ const createQuotation = async (req, res) => {
       destination,
       actual_weight,
       created_by,
-      packages = [], // array of { length, width, height, weight }
-      charges = []   // array of { charge_name, type, amount, description }
-    } = req.body;
-
+      packages = [], // [{length,width,height,same_size}]
+      charges = []   // [{charge_name,type,rate_per_kg,weight_kg,amount,description}]
+    } = req.body;    
     // ✅ Validation for required fields
     const errors = [];
-    
+
     if (!subject || subject.trim() === '') {
       errors.push('Subject is required');
     }
-    
+
     if (!customer_id || sanitizeNumber(customer_id) === null) {
       errors.push('Customer ID is required and must be a valid number');
     }
-    
+
     if (!agent_id || sanitizeNumber(agent_id) === null) {
       errors.push('Agent ID is required and must be a valid number');
     }
-    
+
     if (!address || address.trim() === '') {
       errors.push('Address is required');
     }
-    
+
     if (!origin || origin.trim() === '') {
       errors.push('Origin is required');
     }
-    
+
     if (!destination || destination.trim() === '') {
       errors.push('Destination is required');
     }
-    
+
     if (!actual_weight || sanitizeNumber(actual_weight) === null || sanitizeNumber(actual_weight) <= 0) {
       errors.push('Actual weight is required and must be a positive number');
     }
@@ -83,77 +229,158 @@ const createQuotation = async (req, res) => {
       });
     }
 
-    // Auto-calculate volume weight
-    const volumeFactor = 5000; // adjust as needed
-    let totalVolumeWeight = packages.reduce((sum, pkg) => {
-      const l = sanitizeNumber(pkg.length) || 0;
-      const w = sanitizeNumber(pkg.width) || 0;
-      const h = sanitizeNumber(pkg.height) || 0;
-      return sum + (l * w * h) / volumeFactor;
-    }, 0);
+
+    // --- Step 1: Calculate total volumetric weight ---
+    const volumeFactor = 5000;
+    let totalVolumeWeight = 0;
+    for (let pkg of packages) {
+      const l = sanitizeNumber(pkg.length);
+      const w = sanitizeNumber(pkg.width);
+      const h = sanitizeNumber(pkg.height);
+      const sameSize = sanitizeNumber(pkg.same_size || 1); //1
+
+      const volWeight = (l * w * h) / volumeFactor;
+      const totalPkgWeight = volWeight * sameSize; //2
+
+      // totalVolumeWeight += volWeight;
+      totalVolumeWeight += totalPkgWeight;
+    }
+
+    // --- Step 2: Determine chargeable weight (max of actual and volumetric) ---
+    let chargeable_weight = Math.max(sanitizeNumber(actual_weight), totalVolumeWeight);
+    chargeable_weight = Number(chargeable_weight.toFixed(2)); // ✅ Rounded
+
+
+    // --- Step 3: Calculate Freight charges ---
+    // Only charges with type = 'freight' will be multiplied by chargeable_weight
+    let totalFreight = 0;
+    let destinationCharge = 0;
+    let fscPercentage = 0;
+
+    for (let chg of charges) {
+      const chargeName = (chg.charge_name || "").toLowerCase();
+
+      // --- Handle FSC separately ---
+      if (chargeName === "fsc") {
+        // FSC may be provided as either "rate_per_kg" or "amount" (percentage)
+        fscPercentage = sanitizeNumber(chg.rate_per_kg || chg.amount || 0);
+        continue; // skip inserting now; we will insert FSC later with computed amount
+      }
+      if (chg.type === 'freight') {
+        const rate = sanitizeNumber(chg.rate_per_kg);
+        const freightAmount = chargeable_weight * rate;
+        chg.amount = freightAmount;
+        totalFreight += freightAmount;
+      } else if (chg.type === 'destination') {
+        destinationCharge += sanitizeNumber(chg.amount);
+      }
+
+    }
+
+    // Step 4: Add FSC (Fuel Surcharge) - 20% of total freight
+    // const fscPercentage = 23.50;
+    // const fscAmount = (totalFreight * fscPercentage) / 100;
+    if (fscPercentage > 0) {
+      fscAmount = (totalFreight * fscPercentage) / 100;
+    }
+
+
+    // Total freight including FSC (but NOT destination)
+    const totalFreightWithFSC = totalFreight + fscAmount;
+
+    // Step 5: Add destination charge to get total before GST
+    const total = totalFreightWithFSC + destinationCharge;
+
+    // Step 6: Apply GST (18%)
+    const gstPercentage = 18;
+    const gstAmount = (total * gstPercentage) / 100;
+    const finalTotal = total + gstAmount;
 
     const packages_count = packages.length;
-
-    // Step 1: Generate quote number
     const quote_no = await generateQuoteNumber();
 
     await client.query('BEGIN');
 
-    // Step 2: Insert into quotations
+
+    // --- Insert quotation ---
     const insertQuotationQuery = `
-      INSERT INTO courier_export_quotations 
-      (quote_no, subject, customer_id, agent_id, address, origin, destination, actual_weight, volume_weight, packages_count, created_by, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-      RETURNING id
+     INSERT INTO courier_export_quotations 
+  (quote_no, subject, customer_id, agent_id, address, origin, destination, actual_weight, volume_weight, chargeable_weight, packages_count, total_freight_amount, total, final_total, created_by, created_at, updated_at)
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),NOW())
+  RETURNING id;
     `;
     const quotationValues = [
       quote_no,
-      subject || null,
+      subject,
       sanitizeNumber(customer_id),
       sanitizeNumber(agent_id),
-      address || null,
-      origin || null,
-      destination || null,
+      address,
+      origin,
+      destination,
       sanitizeNumber(actual_weight),
-      sanitizeNumber(totalVolumeWeight),
-      sanitizeNumber(packages_count),
-      sanitizeNumber(created_by)
+      totalVolumeWeight,
+      chargeable_weight,
+      packages_count,
+      totalFreightWithFSC,
+      total,
+      finalTotal,
+      sanitizeNumber(created_by),
     ];
-    const quotationResult = await client.query(insertQuotationQuery, quotationValues);
-    const quotationId = quotationResult.rows[0].id;
+    const { rows } = await client.query(insertQuotationQuery, quotationValues);
+    const quotationId = rows[0].id;
 
-    // Step 3: Insert packages
+    // --- Insert packages ---
     for (let pkg of packages) {
-      if (pkg.length || pkg.width || pkg.height || pkg.weight) {
       await client.query(
-        `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, same_size)
+         VALUES ($1,$2,$3,$4,$5)`,
         [
           quotationId,
           sanitizeNumber(pkg.length),
           sanitizeNumber(pkg.width),
           sanitizeNumber(pkg.height),
-          sanitizeNumber(pkg.weight)
+          sanitizeNumber(pkg.same_size)
         ]
       );
     }
-    }
 
-    // Step 4: Insert charges
+    // --- Insert charges (freight + destination) ---
     for (let chg of charges) {
-      if (chg.charge_name || chg.amount) {
+      const chargeName = (chg.charge_name || "").trim().toLowerCase();
+      if (chargeName === "fsc") continue; // skip, we’ll insert manually
+
       await client.query(
-        `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO courier_export_quotation_charges
+         (quotation_id, charge_name, type, rate_per_kg, weight_kg, amount, description)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [
           quotationId,
           chg.charge_name || null,
           chg.type || null,
+          sanitizeNumber(chg.rate_per_kg),
+          chargeable_weight,
           sanitizeNumber(chg.amount),
           chg.description || null
         ]
       );
     }
+
+
+    // --- Insert FSC charge separately ---
+    if (fscPercentage > 0) {
+      await client.query(
+        `INSERT INTO courier_export_quotation_charges
+     (quotation_id, charge_name, type, weight_kg, amount, description)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+        [
+          quotationId,
+          "FSC",
+          "freight",
+          chargeable_weight,
+          fscPercentage,
+          "Fuel Surcharge (" + fscPercentage + "%)"
+        ]
+      );
     }
 
     await client.query('COMMIT');
@@ -161,7 +388,16 @@ const createQuotation = async (req, res) => {
     res.json({
       success: true,
       message: "Quotation created successfully",
-      data: { quotationId, quote_no, totalVolumeWeight, packages_count }
+      data: {
+        quotationId,
+        quote_no,
+        actual_weight,
+        totalVolumeWeight,
+        chargeable_weight,
+        totalFreightWithFSC,
+        total,
+        finalTotal
+      }
     });
 
   } catch (error) {
@@ -204,7 +440,7 @@ const getQuotationByQuoteNo = async (req, res) => {
 
     // ✅ FETCH packages
     const { rows: packages } = await client.query(
-      `SELECT id, length, width, height, weight 
+      `SELECT id, length, width, height, same_size 
        FROM courier_export_quotation_packages
        WHERE quotation_id = $1`,
       [quotation.id]
@@ -261,7 +497,7 @@ const getAllQuotations = async (req, res) => {
     // Optionally fetch packages & charges for each quotation
     for (let quotation of quotations) {
       const { rows: packages } = await client.query(
-        `SELECT id, length, width, height, weight 
+        `SELECT id, length, width, height, same_size 
          FROM courier_export_quotation_packages 
          WHERE quotation_id = $1`,
         [quotation.id]
@@ -314,7 +550,7 @@ const getQuotationById = async (req, res) => {
     const quotation = quotations[0];
 
     const { rows: packages } = await client.query(
-      `SELECT id, length, width, height, weight 
+      `SELECT id, length, width, height, same_size 
        FROM courier_export_quotation_packages
        WHERE quotation_id = $1`,
       [quotationId]
@@ -498,7 +734,7 @@ const updateQuotation = async (req, res) => {
       for (let pkg of packages) {
         if (pkg.length || pkg.width || pkg.height || pkg.weight) {
           await client.query(
-            `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, weight)
+            `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, same_size)
              VALUES ($1, $2, $3, $4, $5)`,
             [
               quotationId,
