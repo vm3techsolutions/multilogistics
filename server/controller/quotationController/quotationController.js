@@ -695,95 +695,231 @@ const getQuotationById = async (req, res) => {
 
 const updateQuotation = async (req, res) => {
   const client = await pool.connect();
+  const updated_by = req.user.id;
+
   try {
     const quotationId = sanitizeNumber(req.params.id);
     if (!quotationId) {
       return res.status(400).json({ success: false, message: "Invalid quotation ID" });
     }
 
-    const { packages, charges } = req.body;
+    const {
+      subject,
+      customer_id,
+      agent_id,
+      address,
+      origin,
+      destination,
+      actual_weight,
+      packages = [],
+      charges = []
+    } = req.body;
 
-    // ✅ Only allow editing packages and charges
-    if (!Array.isArray(packages) && !Array.isArray(charges)) {
-      return res.status(400).json({
-        success: false,
-        message: "Only packages and charges can be updated"
-      });
+    // --- Validation ---
+    const errors = [];
+    if (!subject || subject.trim() === '') errors.push("Subject is required");
+    if (!customer_id) errors.push("Customer ID is required");
+    if (!agent_id) errors.push("Agent ID is required");
+    if (!address || address.trim() === '') errors.push("Address is required");
+    if (!origin || origin.trim() === '') errors.push("Origin is required");
+    if (!destination || destination.trim() === '') errors.push("Destination is required");
+    if (!actual_weight || sanitizeNumber(actual_weight) <= 0) errors.push("Actual weight is required");
+    if (errors.length > 0) {
+      return res.status(400).json({ success: false, message: "Validation failed", errors });
     }
 
     await client.query('BEGIN');
 
-    let updatedPackages = false;
-    let updatedCharges = false;
+    // --- Step 1: Calculate volumetric weight ---
+    const volumeFactor = 5000;
+    let totalVolumeWeight = 0;
+    for (let pkg of packages) {
+      const l = sanitizeNumber(pkg.length);
+      const w = sanitizeNumber(pkg.width);
+      const h = sanitizeNumber(pkg.height);
+      const sameSize = sanitizeNumber(pkg.same_size || 1);
+      const volWeight = (l * w * h) / volumeFactor;
+      totalVolumeWeight += volWeight * sameSize;
+    }
 
-    // --- Update packages if provided ---
-    if (Array.isArray(packages)) {
-      // Recalculate volume + package count
-      const volumeFactor = 5000;
-      const totalVolumeWeight = packages.reduce((sum, pkg) => {
-        const l = sanitizeNumber(pkg.length) || 0;
-        const w = sanitizeNumber(pkg.width) || 0;
-        const h = sanitizeNumber(pkg.height) || 0;
-        return sum + (l * w * h) / volumeFactor;
-      }, 0);
+    // --- Step 2: Chargeable weight ---
+    let chargeable_weight = Math.max(sanitizeNumber(actual_weight), totalVolumeWeight);
+    chargeable_weight = Number(chargeable_weight.toFixed(2));
 
-      const packages_count = packages.length;
+    // --- Step 3: Calculate Charges ---
+    let totalFreight = 0;
+    let destinationCharge = 0;
+    let fscPercentage = 0;
 
-      // Delete existing packages and insert new ones
-      await client.query(`DELETE FROM courier_export_quotation_packages WHERE quotation_id=$1`, [quotationId]);
-      for (let pkg of packages) {
-        if (pkg.length || pkg.width || pkg.height || pkg.weight) {
-          await client.query(
-            `INSERT INTO courier_export_quotation_packages (quotation_id, length, width, height, same_size)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [
-              quotationId,
-              sanitizeNumber(pkg.length),
-              sanitizeNumber(pkg.width),
-              sanitizeNumber(pkg.height),
-              sanitizeNumber(pkg.weight)
-            ]
-          );
-        }
+    for (let chg of charges) {
+      const chargeName = (chg.charge_name || "").toLowerCase();
+      if (chargeName === "fsc") {
+        fscPercentage = sanitizeNumber(chg.rate_per_kg || chg.amount || 0);
+        continue;
       }
+      if (chg.type === "freight") {
+        const rate = sanitizeNumber(chg.rate_per_kg);
+        const freightAmount = chargeable_weight * rate;
+        chg.amount = freightAmount;
+        totalFreight += freightAmount;
+      } else if (chg.type === "destination") {
+        destinationCharge += sanitizeNumber(chg.amount);
+      }
+    }
 
-      // Update volume + count in quotation
+    let fscAmount = 0;
+    if (fscPercentage > 0) fscAmount = (totalFreight * fscPercentage) / 100;
+
+    const totalFreightWithFSC = totalFreight + fscAmount;
+    const total = totalFreightWithFSC + destinationCharge;
+    const gstPercentage = 18;
+    const gstAmount = (total * gstPercentage) / 100;
+    const finalTotal = total + gstAmount;
+    const packages_count = packages.length;
+
+    // --- Step 4: Update main quotation ---
+    const updateQuotationQuery = `
+      UPDATE courier_export_quotations
+      SET subject=$1, customer_id=$2, agent_id=$3, address=$4, origin=$5, destination=$6,
+          actual_weight=$7, volume_weight=$8, chargeable_weight=$9, packages_count=$10,
+          total_freight_amount=$11, total=$12, final_total=$13, updated_by=$14,
+          status='draft', updated_at=NOW()
+      WHERE id=$15
+    `;
+    await client.query(updateQuotationQuery, [
+      subject,
+      sanitizeNumber(customer_id),
+      sanitizeNumber(agent_id),
+      address,
+      origin,
+      destination,
+      sanitizeNumber(actual_weight),
+      totalVolumeWeight,
+      chargeable_weight,
+      packages_count,
+      totalFreightWithFSC,
+      total,
+      finalTotal,
+      updated_by,
+      quotationId
+    ]);
+
+    // --- Step 5: Sync Packages (Update/Insert/Delete) ---
+    const { rows: existingPackages } = await client.query(
+      `SELECT id FROM courier_export_quotation_packages WHERE quotation_id=$1`,
+      [quotationId]
+    );
+
+    const existingPackageIds = existingPackages.map(p => p.id);
+    const incomingPackageIds = packages.map(p => p.id).filter(Boolean);
+    const toDeletePackages = existingPackageIds.filter(id => !incomingPackageIds.includes(id));
+
+    if (toDeletePackages.length > 0) {
       await client.query(
-        `UPDATE courier_export_quotations SET volume_weight=$1, packages_count=$2 WHERE id=$3`,
-        [sanitizeNumber(totalVolumeWeight), sanitizeNumber(packages_count), quotationId]
+        `DELETE FROM courier_export_quotation_packages WHERE id = ANY($1::int[])`,
+        [toDeletePackages]
       );
-      
-      updatedPackages = true;
     }
 
-    // --- Update charges if provided ---
-    if (Array.isArray(charges)) {
-      await client.query(`DELETE FROM courier_export_quotation_charges WHERE quotation_id=$1`, [quotationId]);
-      for (let chg of charges) {
-        if (chg.charge_name || chg.amount) {
-          await client.query(
-            `INSERT INTO courier_export_quotation_charges (quotation_id, charge_name, type, amount, description)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [
-              quotationId,
-              chg.charge_name || null,
-              chg.type || null,
-              sanitizeNumber(chg.amount),
-              chg.description || null
-            ]
-          );
-        }
+    for (let pkg of packages) {
+      if (pkg.id) {
+        await client.query(
+          `UPDATE courier_export_quotation_packages
+           SET length=$1, width=$2, height=$3, same_size=$4
+           WHERE id=$5`,
+          [
+            sanitizeNumber(pkg.length),
+            sanitizeNumber(pkg.width),
+            sanitizeNumber(pkg.height),
+            sanitizeNumber(pkg.same_size),
+            pkg.id
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO courier_export_quotation_packages
+           (quotation_id, length, width, height, same_size)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            quotationId,
+            sanitizeNumber(pkg.length),
+            sanitizeNumber(pkg.width),
+            sanitizeNumber(pkg.height),
+            sanitizeNumber(pkg.same_size)
+          ]
+        );
       }
-      updatedCharges = true;
     }
 
-    // ✅ Set status to 'draft' after editing packages or charges
-    if (updatedPackages || updatedCharges) {
+    // --- Step 6: Sync Charges (Update/Insert/Delete) ---
+    const { rows: existingCharges } = await client.query(
+      `SELECT id FROM courier_export_quotation_charges WHERE quotation_id=$1`,
+      [quotationId]
+    );
+
+    const existingChargeIds = existingCharges.map(c => c.id);
+    const incomingChargeIds = charges.map(c => c.id).filter(Boolean);
+    const toDeleteCharges = existingChargeIds.filter(id => !incomingChargeIds.includes(id));
+
+    if (toDeleteCharges.length > 0) {
       await client.query(
-        `UPDATE courier_export_quotations 
-         SET status = 'draft', updated_at = NOW()
-         WHERE id = $1`,
-        [quotationId]
+        `DELETE FROM courier_export_quotation_charges WHERE id = ANY($1::int[])`,
+        [toDeleteCharges]
+      );
+    }
+
+    for (let chg of charges) {
+      const chargeName = (chg.charge_name || "").trim().toLowerCase();
+      if (chargeName === "fsc") continue;
+
+      if (chg.id) {
+        await client.query(
+          `UPDATE courier_export_quotation_charges
+           SET charge_name=$1, type=$2, rate_per_kg=$3, weight_kg=$4, amount=$5,
+               description=$6
+           WHERE id=$7`,
+          [
+            chg.charge_name || null,
+            chg.type || null,
+            sanitizeNumber(chg.rate_per_kg),
+            chargeable_weight,
+            sanitizeNumber(chg.amount),
+            chg.description || null,
+            chg.id
+          ]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO courier_export_quotation_charges
+           (quotation_id, charge_name, type, rate_per_kg, weight_kg, amount, description)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            quotationId,
+            chg.charge_name || null,
+            chg.type || null,
+            sanitizeNumber(chg.rate_per_kg),
+            chargeable_weight,
+            sanitizeNumber(chg.amount),
+            chg.description || null
+          ]
+        );
+      }
+    }
+
+    // --- Step 7: FSC charge ---
+    if (fscPercentage > 0) {
+      await client.query(
+        `INSERT INTO courier_export_quotation_charges
+         (quotation_id, charge_name, type, weight_kg, amount, description)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [
+          quotationId,
+          "FSC",
+          "freight",
+          chargeable_weight,
+          fscPercentage,
+          `Fuel Surcharge (${fscPercentage}%)`
+        ]
       );
     }
 
@@ -791,12 +927,16 @@ const updateQuotation = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Quotation updated successfully and status set to draft",
-      data: { 
-        quotationId, 
-        updatedPackages, 
-        updatedCharges,
-        status: 'draft'
+      message: "Quotation updated successfully and set draft (packages and charges synced)",
+      data: {
+        quotationId,
+        actual_weight,
+        totalVolumeWeight,
+        chargeable_weight,
+        totalFreightWithFSC,
+        total,
+        finalTotal,
+        status: "draft"
       }
     });
 
