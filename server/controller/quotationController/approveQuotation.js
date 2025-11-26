@@ -148,7 +148,7 @@ const triggerQuotationEmail = async (req, res) => {
 
     // Fetch quotation with packages and charges
     const { rows } = await client.query(
-      `SELECT q.id, q.quote_no, q.subject, q.origin, q.destination, q.actual_weight, q.status,
+      `SELECT q.id, q.quote_no, q.subject, q.origin, q.destination, q.actual_weight, q.status, q.total, q.final_total,
               c.email AS customer_email, a.email AS agent_email
        FROM courier_export_quotations q
        LEFT JOIN customers c ON q.customer_id = c.id
@@ -160,6 +160,10 @@ const triggerQuotationEmail = async (req, res) => {
     if (!rows[0]) return res.status(404).json({ success: false, message: "Quotation not found" });
 
     const quotation = rows[0];
+    // normalize total fields for email
+    quotation.total = quotation.total || null;
+    // prefer camelCase finalTotal for email template
+    quotation.finalTotal = quotation.final_total || quotation.finalTotal || null;
 
     if (quotation.status !== "draft") {
       return res.status(400).json({
@@ -171,7 +175,7 @@ const triggerQuotationEmail = async (req, res) => {
 
     // Fetch packages
     const { rows: packages } = await client.query(
-      `SELECT length, width, height, weight 
+      `SELECT length, width, height, same_size 
        FROM courier_export_quotation_packages 
        WHERE quotation_id=$1`,
       [quotationId]

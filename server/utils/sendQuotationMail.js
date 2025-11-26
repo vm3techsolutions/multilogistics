@@ -19,14 +19,14 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
            <th style="padding:8px; border:1px solid #ddd;">Length</th>
            <th style="padding:8px; border:1px solid #ddd;">Width</th>
            <th style="padding:8px; border:1px solid #ddd;">Height</th>
-           <th style="padding:8px; border:1px solid #ddd;">Weight</th>
+           <th style="padding:8px; border:1px solid #ddd;">Same Size</th>
          </tr>
          ${quotation.packages.map(p => `
            <tr>
              <td style="padding:8px; border:1px solid #eee;">${p.length || 0}</td>
              <td style="padding:8px; border:1px solid #eee;">${p.width || 0}</td>
              <td style="padding:8px; border:1px solid #eee;">${p.height || 0}</td>
-             <td style="padding:8px; border:1px solid #eee;">${p.weight || 0}</td>
+             <td style="padding:8px; border:1px solid #eee;">${p.same_size || 0}</td>
            </tr>
          `).join("")}
        </table>` : "";
@@ -51,6 +51,12 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
          `).join("")}
        </table>` : "";
 
+  const formatAmount = (v) => {
+    if (v === null || v === undefined) return '0.00';
+    const n = Number(v);
+    return isNaN(n) ? String(v) : n.toFixed(2);
+  };
+
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; border:1px solid #ddd; border-radius:10px; padding:20px;">
       <h2 style="color:#003366;">Courier Export Quotation</h2>
@@ -61,6 +67,8 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Origin:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.origin || "N/A"}</td></tr>
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Destination:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.destination || "N/A"}</td></tr>
         <tr><td style="padding:8px; border:1px solid #eee;"><b>Actual Weight:</b></td><td style="padding:8px; border:1px solid #eee;">${quotation.actual_weight || 0} kg</td></tr>
+        <tr><td style="padding:8px; border:1px solid #eee;"><b>Total (before GST):</b></td><td style="padding:8px; border:1px solid #eee;">${formatAmount(quotation.total)}</td></tr>
+        <tr><td style="padding:8px; border:1px solid #eee;"><b>Final Total (incl. GST):</b></td><td style="padding:8px; border:1px solid #eee;">${formatAmount(quotation.finalTotal)}</td></tr>
       </table>
       ${packagesHtml}
       ${chargesHtml}
@@ -75,7 +83,7 @@ const sendQuotationMail = async (customerEmail, companyEmail, quotation) => {
   `;
 
   await sendEmail({
-    to: [customerEmail, companyEmail].filter(Boolean).join(","),
+    to: [customerEmail].filter(Boolean).join(","),
     subject,
     html: htmlContent,
   });

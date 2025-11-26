@@ -6,7 +6,7 @@ const verifyToken = (req, res, next) => {
   console.log("✅ verifyToken middleware running");
 
   const authHeader = req.headers.authorization;
-  console.log('📩 Auth Header:', authHeader);
+  // console.log('📩 Auth Header:', authHeader);
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.warn("⚠️ Missing or malformed token");
@@ -17,7 +17,7 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, secret);
-    console.log("✅ Token verified:", decoded);
+    // console.log("✅ Token verified:", decoded);
     req.user = decoded;
     next();
   } catch (err) {
