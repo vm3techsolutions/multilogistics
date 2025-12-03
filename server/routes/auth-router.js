@@ -14,6 +14,7 @@ const { getCourierStats } = require('../controller/courierExportController/getCo
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
 const upload = require("../config/multer");
 const kycController = require("../controller/customerController/kycController");
+const  trackingController  = require('../controller/trackingController/trackingController');
 
 // Admin Signup Route
 router.post('/signup', adminController.adminSignUp);
@@ -57,5 +58,8 @@ router.get('/courier-exports/stats',verifyToken, getCourierStats);
 router.get("/recent-shipments", getRecentShipmentsController);
 router.get('/courier-exports-all', verifyToken, getAllCourierExports);
 router.get('/courier-exports/:id', verifyToken, getCourierExportById);
+
+// Tracking Routes 
+router.get("/track/:trackingNumber", trackingController.trackFedexShipment);
 
 module.exports = router;
