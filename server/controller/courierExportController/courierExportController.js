@@ -53,18 +53,41 @@ const createCourierExport = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-      // Check duplicate quotation_id
+    //   // Check duplicate quotation_id
+    // if (quotation_id) {
+    //   const quotationExists = await client.query(
+    //     `SELECT id FROM courier_exports WHERE quotation_id = $1`,
+    //     [quotation_id]
+    //   );
+    //   if (quotationExists.rows.length > 0) {
+    //     await client.query('ROLLBACK');
+    //     return res.status(409).json({ message: 'This quotation is already linked to another courier export' });
+    //   }
+    // }
+    
+    // Check existing courier exports for this quotation_id.
+    // If one or more exports exist and the client hasn't provided explicit confirmation
+    // (either `confirm=true` query param or `{ "confirm": true }` in the body),
+    // return a 409 with the existing exports and an instruction to confirm.
     if (quotation_id) {
-      const quotationExists = await client.query(
-        `SELECT id FROM courier_exports WHERE quotation_id = $1`,
+      const existing = await client.query(
+        `SELECT * FROM courier_exports WHERE quotation_id = $1 ORDER BY created_at DESC`,
         [quotation_id]
       );
-      if (quotationExists.rows.length > 0) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({ message: 'This quotation is already linked to another courier export' });
+
+      if (existing.rows.length > 0) {
+        const confirmFlag = (req.body && req.body.confirm === true) || req.query.confirm === 'true';
+        if (!confirmFlag) {
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            message: 'This quotation is already linked to one or more courier exports.',
+            existing_exports: existing.rows,
+            note: "If you want to create another courier export using the same quotation, resend the request with `confirm=true` in the query string or `{ \"confirm\": true }` in the JSON body."
+          });
+        }
+        // If confirmFlag is true, proceed to create a new courier export linked to the same quotation.
       }
     }
-    
     // Auto-generate AWB number
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD

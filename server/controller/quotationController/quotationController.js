@@ -420,8 +420,8 @@ const getQuotationByQuoteNo = async (req, res) => {
     // ✅ FETCH quotation + customer info
     const { rows: quotations } = await client.query(
       `SELECT q.id, q.quote_no, q.subject, q.customer_id, q.agent_id, q.address, 
-              q.origin, q.destination, q.actual_weight, q.volume_weight, 
-              q.packages_count, q.created_by, q.status, q.created_at,
+              q.origin, q.destination, q.actual_weight, q.volume_weight, q.chargeable_weight,
+              q.packages_count, q.created_by, q.status, q.total_freight_amount, q.total, q.final_total, q.created_at,
               c.name AS customer_name,
               c.email AS customer_email,
               c.phone AS customer_phone,
@@ -449,7 +449,7 @@ const getQuotationByQuoteNo = async (req, res) => {
 
     // ✅ FETCH charges
     const { rows: charges } = await client.query(
-      `SELECT id, charge_name, type, amount, description 
+      `SELECT id, charge_name, type, rate_per_kg, weight_kg, amount, description 
        FROM courier_export_quotation_charges
        WHERE quotation_id = $1`,
       [quotation.id]
@@ -487,8 +487,8 @@ const getAllQuotations = async (req, res) => {
   try {
     const quotationsQuery = `
       SELECT q.id, q.quote_no, q.subject, q.customer_id, q.agent_id, q.address, 
-             q.origin, q.destination, q.actual_weight, q.volume_weight, 
-             q.packages_count, q.created_by, q.status, q.created_at, q.updated_at
+             q.origin, q.destination, q.actual_weight, q.volume_weight, q.chargeable_weight,
+             q.packages_count, q.created_by, q.status, q.total_freight_amount, q.total, q.final_total, q.created_at, q.updated_at
       FROM courier_export_quotations q
       ORDER BY q.created_at DESC
     `;
@@ -505,7 +505,7 @@ const getAllQuotations = async (req, res) => {
       quotation.packages = packages;
 
       const { rows: charges } = await client.query(
-        `SELECT id, charge_name, type, amount, description
+        `SELECT id, charge_name, type, rate_per_kg, weight_kg, amount, description
          FROM courier_export_quotation_charges 
          WHERE quotation_id = $1`,
         [quotation.id]
@@ -537,7 +537,7 @@ const getQuotationById = async (req, res) => {
 
     const { rows: quotations } = await client.query(
       `SELECT id, quote_no, subject, customer_id, agent_id, address, origin, destination, 
-              actual_weight, volume_weight, packages_count, created_by, created_at, updated_at
+              actual_weight, volume_weight, chargeable_weight, packages_count, total_freight_amount, total, final_total, created_by, created_at, updated_at
        FROM courier_export_quotations
        WHERE id = $1`,
       [quotationId]
@@ -558,7 +558,7 @@ const getQuotationById = async (req, res) => {
     quotation.packages = packages;
 
     const { rows: charges } = await client.query(
-      `SELECT id, charge_name, type, amount, description 
+      `SELECT id, charge_name, type, rate_per_kg, weight_kg, amount, description 
        FROM courier_export_quotation_charges
        WHERE quotation_id = $1`,
       [quotationId]
