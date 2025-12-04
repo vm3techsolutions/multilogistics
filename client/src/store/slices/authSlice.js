@@ -10,14 +10,13 @@ export const loginUser = createAsyncThunk(
       const res = await axiosInstance.post("/login", { email, password });
       const data = res.data;
 
-      // Save in localStorage for persistence
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
+      if (data.token) localStorage.setItem("token", data.token);
+
       if (data.admin) {
         localStorage.setItem(
           "user",
           JSON.stringify({
+            id: data.admin.id,
             role: data.admin.role,
             username: data.admin.name,
           })
@@ -25,6 +24,7 @@ export const loginUser = createAsyncThunk(
       }
 
       return {
+        id: data.admin?.id || null,
         token: data.token,
         role: data.admin?.role || null,
         username: data.admin?.name || null,
@@ -37,11 +37,16 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
     token:
       typeof window !== "undefined" ? localStorage.getItem("token") : null,
+      id:
+  typeof window !== "undefined" && localStorage.getItem("user")
+    ? JSON.parse(localStorage.getItem("user")).id
+    : null,
     role:
       typeof window !== "undefined" && localStorage.getItem("user")
         ? JSON.parse(localStorage.getItem("user")).role
@@ -78,6 +83,7 @@ const authSlice = createSlice({
 
       if (token) {
         state.token = token;
+        state.id = user?.id || null;  
         state.role = user?.role || null;
         state.username = user?.username || null;
         state.isAuthenticated = true;
@@ -91,12 +97,14 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.token = action.payload.token;
-        state.role = action.payload.role;
-        state.username = action.payload.username;
-        state.isAuthenticated = true;
-      })
+  state.loading = false;
+  state.id = action.payload.id;
+  state.token = action.payload.token;
+  state.role = action.payload.role;
+  state.username = action.payload.username;
+  state.isAuthenticated = true;
+})
+
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;

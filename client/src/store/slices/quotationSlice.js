@@ -1,339 +1,227 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axiosInstance from "@/api/axiosInstance";
+import axiosInstance from "@/api/axiosInstance"; // your axios instance
 
-
-/* -------------------------------------------------------------------------- */
-/* ✅ Fetch All & Fetch by Number                                             */
-/* -------------------------------------------------------------------------- */
-export const fetchAllQuotations = createAsyncThunk(
-  "quotation/fetchAll",
-  async (_, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axiosInstance.get(`/getAllQuotations`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data.data || [];
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch quotations"
-      );
-    }
-  }
-);
-
-export const fetchQuotationByNumber = createAsyncThunk(
-  "quotation/fetchByNumber",
-  async (quote_no, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axiosInstance.get(
-        `/number/${encodeURIComponent(quote_no)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return res.data.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch quotation details"
-      );
-    }
-  }
-);
-
-/* -------------------------------------------------------------------------- */
-/* ✅ Create Quotation (merged charges)                                       */
-/* -------------------------------------------------------------------------- */
+//--------------------------------------
+//  API: Create Quotation
+//--------------------------------------
 export const createQuotation = createAsyncThunk(
   "quotation/createQuotation",
-  async (formData, { rejectWithValue }) => {
+  async (data, { rejectWithValue }) => {
     try {
-      // 🔹 Merge freight & destination visually separated charges
-      const combinedCharges = [
-        ...(formData.charges || []),
-        ...(formData.destination_charges || []),
-      ].map((item) => ({
-        charge_name: item.charge_name,
-        type: item.type,
-        amount: item.amount,
-      }));
-
-      const payload = {
-        ...formData,
-        charges: combinedCharges,
-      };
-
-      delete payload.destination_charges;
-
-      const response = await axiosInstance.post("/createQuotation", payload);
-      return response.data;
+      const res = await axiosInstance.post("/createQuotation", data);
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Something went wrong" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-/* -------------------------------------------------------------------------- */
-/* ✅ Get All, Get by ID, Update, Approve, Email                              */
-/* -------------------------------------------------------------------------- */
+//--------------------------------------
+//  API: Get All Quotations
+//--------------------------------------
 export const getAllQuotations = createAsyncThunk(
   "quotation/getAllQuotations",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get("/getAllQuotations");
-      return response.data;
+      const res = await axiosInstance.get("/getAllQuotations");
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to fetch quotations" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
+//--------------------------------------
+//  API: Get Quotation By ID
+//--------------------------------------
 export const getQuotationById = createAsyncThunk(
   "quotation/getQuotationById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/getQuotationById/${id}`);
-      return response.data;
+      const res = await axiosInstance.get(`/getQuotationById/${id}`);
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to fetch the quotation" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
+//--------------------------------------
+//  API: Get Quotation By Quote Number
+//--------------------------------------
+export const getQuotationByQuoteNo = createAsyncThunk(
+  "quotation/getQuotationByQuoteNo",
+  async (quote_no, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get(`/number/${quote_no}`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+//--------------------------------------
+//  API: Update Quotation
+//--------------------------------------
 export const updateQuotation = createAsyncThunk(
   "quotation/updateQuotation",
-  async ({ id, data }, { rejectWithValue }) => {
+  async ({ id, ...data }, { rejectWithValue }) => {
     try {
-      // 🔹 Merge freight & destination charges for updates too
-      const combinedCharges = [
-        ...(data.charges || []),
-        ...(data.destination_charges || []),
-      ].map((item) => ({
-        charge_name: item.charge_name,
-        type: item.type,
-        amount: item.amount,
-      }));
-
-      const payload = {
-        ...data,
-        charges: combinedCharges,
-      };
-
-      delete payload.destination_charges;
-
-      const response = await axiosInstance.put(`/updateQuotation/${id}`, payload);
-      return response.data;
+      const res = await axiosInstance.put(`/updateQuotation/${id}`, data);
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to update quotation" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-export const updateQuotationStatus = createAsyncThunk(
-  "quotation/updateQuotationStatus",
+//--------------------------------------
+//  API: Approve Quotation
+//--------------------------------------
+export const approveQuotation = createAsyncThunk(
+  "quotation/approveQuotation",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/approveQuotation/${id}`, {
-        status,
-      });
-      return response.data;
+      const res = await axiosInstance.put(`/approveQuotation/${id}`, { status });
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to update status" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-export const triggerQuotationEmail = createAsyncThunk(
-  "quotation/triggerQuotationEmail",
+
+//--------------------------------------
+//  API: Send Email
+//--------------------------------------
+export const sendQuotationEmail = createAsyncThunk(
+  "quotation/sendQuotationEmail",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post(`/quotation/send-email/${id}`);
-      return response.data;
+      const res = await axiosInstance.post(`/quotation/send-email/${id}`);
+      return res.data.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to trigger email" }
-      );
+      return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-/* -------------------------------------------------------------------------- */
-/* ✅ Slice Definition                                                        */
-/* -------------------------------------------------------------------------- */
+//=======================================================
+//  Slice
+//=======================================================
 const quotationSlice = createSlice({
   name: "quotation",
   initialState: {
     quotations: [],
-    quotation: null,
-    selectedQuotation: null,
+    singleQuotation: null,
     loading: false,
-    success: false,
     error: null,
-    lastCreated: null,
-    lastUpdated: null,
-    lastEmailMessage: null,
+    successMessage: null,
   },
+
   reducers: {
-    resetQuotationState: (state) => {
-      state.loading = false;
-      state.success = false;
+    clearQuotationMessages(state) {
       state.error = null;
-      state.lastCreated = null;
-      state.lastUpdated = null;
-      state.quotation = null;
-      state.selectedQuotation = null;
-    },
-    clearSelectedQuotation: (state) => {
-      state.selectedQuotation = null;
+      state.successMessage = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
-      /* ------------------ Fetch ------------------ */
-      .addCase(fetchAllQuotations.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchAllQuotations.fulfilled, (state, action) => {
-        state.loading = false;
-        state.quotations = action.payload;
-      })
-      .addCase(fetchAllQuotations.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      .addCase(fetchQuotationByNumber.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(fetchQuotationByNumber.fulfilled, (state, action) => {
-        state.loading = false;
-        state.selectedQuotation = action.payload;
-      })
-      .addCase(fetchQuotationByNumber.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      /* ------------------ Create ------------------ */
+      // CREATE
       .addCase(createQuotation.pending, (state) => {
         state.loading = true;
-        state.error = null;
-        state.success = false;
       })
-      .addCase(createQuotation.fulfilled, (state, action) => {
+      .addCase(createQuotation.fulfilled, (state) => {
         state.loading = false;
-        state.success = true;
-        state.lastCreated = action.payload.data || null;
+        state.successMessage = "Quotation created successfully";
       })
       .addCase(createQuotation.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to create quotation";
-        state.success = false;
+        state.error = action.payload.message || "Something went wrong";
+
       })
 
-      /* ------------------ Get All ------------------ */
+      // GET ALL
       .addCase(getAllQuotations.pending, (state) => {
         state.loading = true;
       })
       .addCase(getAllQuotations.fulfilled, (state, action) => {
         state.loading = false;
-        state.success = true;
-        state.quotations = action.payload.data || [];
+        state.quotations = action.payload;
       })
       .addCase(getAllQuotations.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to fetch quotations";
+        state.error = action.payload;
       })
 
-      /* ------------------ Get by ID ------------------ */
+      // GET BY ID
       .addCase(getQuotationById.pending, (state) => {
         state.loading = true;
       })
       .addCase(getQuotationById.fulfilled, (state, action) => {
         state.loading = false;
-        state.success = true;
-        state.quotation = action.payload.data || null;
+        state.singleQuotation = action.payload;
       })
       .addCase(getQuotationById.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to fetch quotation";
+        state.error = action.payload;
       })
 
-      /* ------------------ Update ------------------ */
+      // GET BY QUOTE NO
+      .addCase(getQuotationByQuoteNo.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getQuotationByQuoteNo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.singleQuotation = action.payload;
+      })
+      .addCase(getQuotationByQuoteNo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // UPDATE
       .addCase(updateQuotation.pending, (state) => {
         state.loading = true;
       })
-      .addCase(updateQuotation.fulfilled, (state, action) => {
+      .addCase(updateQuotation.fulfilled, (state) => {
         state.loading = false;
-        state.success = true;
-        state.lastUpdated = action.payload.data || null;
-        const index = state.quotations.findIndex(
-          (q) => q.id === action.payload.data?.id
-        );
-        if (index !== -1) {
-          state.quotations[index] = action.payload.data;
-        }
+        state.successMessage = "Quotation updated successfully";
       })
       .addCase(updateQuotation.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to update quotation";
+        state.error = action.payload;
       })
 
-      /* ------------------ Status Update ------------------ */
-      .addCase(updateQuotationStatus.pending, (state) => {
+      // APPROVE
+      .addCase(approveQuotation.pending, (state) => {
         state.loading = true;
       })
-      .addCase(updateQuotationStatus.fulfilled, (state, action) => {
+      .addCase(approveQuotation.fulfilled, (state) => {
         state.loading = false;
-        state.success = true;
-        const { quotationId, status } = action.payload.data;
-        const index = state.quotations.findIndex((q) => q.id === quotationId);
-        if (index !== -1) state.quotations[index].status = status;
+        state.successMessage = "Quotation approved successfully";
       })
-      .addCase(updateQuotationStatus.rejected, (state, action) => {
+      .addCase(approveQuotation.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to update status";
+        state.error = action.payload;
       })
 
-      /* ------------------ Email ------------------ */
-      .addCase(triggerQuotationEmail.pending, (state) => {
+      // SEND EMAIL
+      .addCase(sendQuotationEmail.pending, (state) => {
         state.loading = true;
       })
-      .addCase(triggerQuotationEmail.fulfilled, (state, action) => {
+      .addCase(sendQuotationEmail.fulfilled, (state) => {
         state.loading = false;
-        state.success = true;
-        state.lastEmailMessage = action.payload.message || null;
-
-        const quotationId = action.payload.data?.quotationId;
-        if (quotationId) {
-          const index = state.quotations.findIndex((q) => q.id === quotationId);
-          if (index !== -1) state.quotations[index].status = "pending";
-        }
+        state.successMessage = "Quotation email sent successfully";
       })
-      .addCase(triggerQuotationEmail.rejected, (state, action) => {
+      .addCase(sendQuotationEmail.rejected, (state, action) => {
         state.loading = false;
-        state.error =
-          action.payload?.message || "Failed to trigger email";
+        state.error = action.payload;
       });
   },
 });
 
-export const { resetQuotationState, clearSelectedQuotation } =
-  quotationSlice.actions;
-
+export const { clearQuotationMessages } = quotationSlice.actions;
 export default quotationSlice.reducer;

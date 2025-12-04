@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { addCustomer } from "@/store/slices/customerSlice"; // ✅ update path if needed
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addCustomer, editCustomer } from "@/store/slices/customerSlice";
 
-export default function AddCustomerForm() {
+export default function AddCustomerForm({ onClose, editData }) {
   const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.customers);
 
   const [newCustomer, setNewCustomer] = useState({
     name: "",
@@ -16,14 +17,35 @@ export default function AddCustomerForm() {
 
   const [documents, setDocuments] = useState([{ type: "", file: null }]);
   const [errors, setErrors] = useState([]);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // ✅ Validation
+  // ✅ Prefill data for edit
+  useEffect(() => {
+    if (editData) {
+      setNewCustomer({
+        name: editData.name || "",
+        company_name: editData.company_name || "",
+        email: editData.email || "",
+        phone: editData.phone || "",
+        address: editData.address || "",
+      });
+
+      if (editData.documents?.length) {
+        setDocuments(
+          editData.documents.map((doc) => ({
+            type: doc.type || "",
+            file: null, // Existing files won't be editable, user can re-upload
+          }))
+        );
+      }
+    }
+  }, [editData]);
+
   const validate = () => {
     let tempErrors = [];
 
     if (!newCustomer.name.trim()) tempErrors.push("Name is required.");
-    if (!newCustomer.company_name.trim())
-      tempErrors.push("Company name is required.");
+    if (!newCustomer.company_name.trim()) tempErrors.push("Company name is required.");
     if (!newCustomer.email.trim()) tempErrors.push("Email is required.");
     else if (!/\S+@\S+\.\S+/.test(newCustomer.email))
       tempErrors.push("Invalid email format.");
@@ -32,28 +54,19 @@ export default function AddCustomerForm() {
       tempErrors.push("Phone must be 10 digits only.");
     if (!newCustomer.address.trim()) tempErrors.push("Address is required.");
 
-    // Validate documents
-    documents.forEach((doc, index) => {
-      if (!doc.type) tempErrors.push(`Document type for row ${index + 1} required.`);
-      if (!doc.file) tempErrors.push(`Document file for row ${index + 1} required.`);
+    // ✅ Document validation ONLY for new customers
+  if (!editData) {
+    documents.forEach((doc, i) => {
+      if (!doc.type.trim()) tempErrors.push(`Document type for row ${i + 1} required.`);
+      if (!doc.file) tempErrors.push(`Document file for row ${i + 1} required.`);
     });
+  }
 
     setErrors(tempErrors);
     return tempErrors.length === 0;
   };
 
-  // ✅ Add new document row
-  const addDocumentField = () => {
-    setDocuments([...documents, { type: "", file: null }]);
-  };
-
-  // ✅ Remove document row
-  const removeDocumentField = (index) => {
-    setDocuments(documents.filter((_, i) => i !== index));
-  };
-
-  // ✅ Submit form
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -64,85 +77,95 @@ export default function AddCustomerForm() {
     formData.append("phone", newCustomer.phone);
     formData.append("address", newCustomer.address);
 
-    // Append multiple document types & files
     documents.forEach((doc) => {
       formData.append("document_type", doc.type);
-      formData.append("document", doc.file);
+      if (doc.file) formData.append("document", doc.file);
     });
 
-    // ✅ Dispatch Redux thunk to backend
-    dispatch(addCustomer(formData));
+    let res;
+    if (editData) {
+      // ✅ Update existing customer
+      res = await dispatch(editCustomer({ id: editData.id, formData }));
+    } else {
+      // ✅ Create new customer
+      res = await dispatch(addCustomer(formData));
+    }
 
-    // Reset form
-    setNewCustomer({
-      name: "",
-      company_name: "",
-      email: "",
-      phone: "",
-      address: "",
-    });
-    setDocuments([{ type: "", file: null }]);
-    setErrors([]);
+    if (res.meta.requestStatus === "fulfilled") {
+      setErrors([]);
+      setSuccessMsg(editData ? "✅ Customer updated successfully!" : "✅ Customer added successfully!");
+      setTimeout(() => {
+        setSuccessMsg("");
+        onClose?.();
+      }, 1500);
+    }
+  };
+
+  const addDocumentField = () => {
+    setDocuments([...documents, { type: "", file: null }]);
+  };
+
+  const removeDocumentField = (index) => {
+    setDocuments(documents.filter((_, i) => i !== index));
   };
 
   return (
     <div className="bg-white p-6 rounded-lg w-full max-w-lg">
       <h2 className="text-xl font-semibold mb-4 primaryText">
-        Add New Customer
+        {editData ? "Edit Customer" : "Add New Customer"}
       </h2>
+
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 p-3 rounded mb-3 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+      {successMsg && (
+        <div className="bg-green-50 border border-green-400 text-green-700 p-3 rounded mb-3 text-sm">
+          {successMsg}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4 text-gray-700">
         <input
           type="text"
           placeholder="Name"
           value={newCustomer.name}
-          onChange={(e) =>
-            setNewCustomer({ ...newCustomer, name: e.target.value })
-          }
+          onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
         <input
           type="text"
           placeholder="Company Name"
           value={newCustomer.company_name}
-          onChange={(e) =>
-            setNewCustomer({ ...newCustomer, company_name: e.target.value })
-          }
+          onChange={(e) => setNewCustomer({ ...newCustomer, company_name: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
         <input
           type="email"
           placeholder="Email"
           value={newCustomer.email}
-          onChange={(e) =>
-            setNewCustomer({ ...newCustomer, email: e.target.value })
-          }
+          onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
         <input
           type="text"
           placeholder="Phone"
           value={newCustomer.phone}
-          onChange={(e) =>
-            setNewCustomer({ ...newCustomer, phone: e.target.value })
-          }
+          onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
         <input
           type="text"
           placeholder="Address"
           value={newCustomer.address}
-          onChange={(e) =>
-            setNewCustomer({ ...newCustomer, address: e.target.value })
-          }
+          onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
 
-        {/* 🧾 Dynamic Document Fields */}
+        {/* 🧾 KYC Documents */}
         <div>
-          <label className="block mb-1 font-medium text-gray-700">
-            KYC Documents
-          </label>
+          <label className="block mb-1 font-medium text-gray-700">KYC Documents</label>
           {documents.map((doc, index) => (
             <div key={index} className="flex flex-col sm:flex-row gap-2 mb-2">
               <input
@@ -176,7 +199,6 @@ export default function AddCustomerForm() {
                 </button>
               )}
             </div>
-
           ))}
           <button
             type="button"
@@ -187,17 +209,16 @@ export default function AddCustomerForm() {
           </button>
         </div>
 
-        {/* ✅ Submit Button */}
-        <div className="flex w-full mt-4">
-          <button
-            type="submit"
-            className="primaryBg w-full text-white px-6 py-2 rounded-lg font-semibold shadow-md hover:bg-green-700 transition"
-          >
-            Add New Customer
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`primaryBg w-full text-white px-6 py-2 rounded-lg font-semibold shadow-md ${
+            loading ? "opacity-70" : "hover:bg-green-700"
+          } transition`}
+        >
+          {loading ? "Saving..." : editData ? "Update Customer" : "Add New Customer"}
+        </button>
 
-        {/* 🚨 Error Box */}
         {errors.length > 0 && (
           <div className="bg-red-50 border border-red-400 text-red-700 p-3 rounded text-sm mt-3 space-y-1">
             {errors.map((err, i) => (

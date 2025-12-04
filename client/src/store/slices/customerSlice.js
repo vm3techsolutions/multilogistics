@@ -97,15 +97,21 @@ export const updateCustomerStatus = createAsyncThunk(
   "customers/updateStatus",
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.put(`/update-status/${id}`, { status }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      return res.data;
+      // ✅ corrected route
+      const res = await axiosInstance.put(
+        `/updateCustomerStatus/${id}`,
+        { status },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      return res.data; // { message, customer }
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to update customer status");
     }
   }
 );
+
 
 /* -------------------------------------------------------
    ✅ SLICE
@@ -231,8 +237,8 @@ const customerSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* -------------------------------------------------------
-         🔹 UPDATE STATUS
+       /* -------------------------------------------------------
+         🔹 UPDATE CUSTOMER STATUS (Enable / Disable)
       ------------------------------------------------------- */
       .addCase(updateCustomerStatus.pending, (state) => {
         state.loading = true;
@@ -243,6 +249,7 @@ const customerSlice = createSlice({
         const index = state.list.findIndex((c) => c.id === updated.id);
         if (index !== -1) state.list[index] = updated;
         state.message = action.payload.message;
+        state.success = true;
       })
       .addCase(updateCustomerStatus.rejected, (state, action) => {
         state.loading = false;
