@@ -18,7 +18,7 @@ export default function AdminLayout({ children }) {
         {/* <Topbar /> */}
 
         {/* Page content */}
-        <main className="p-6 flex-1 overflow-y-auto">{children}</main>
+        <main className="p-6 flex-1 overflow-y-auto lightBg">{children}</main>
       </div>
     </div>
   );

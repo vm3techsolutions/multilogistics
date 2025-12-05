@@ -64,8 +64,8 @@ export default function QuotationPage() {
 
       {/* Quotation List */}
       {formType === "" && (
-        <div className="border rounded-lg p-5 mb-5 min-h-[300px]">
-          <h3 className="mb-3 text-lg font-medium">Quotations</h3>
+        <div className=" bg-white rounded-xl p-5 mb-5 min-h-[300px]">
+          {/* <h3 className="mb-3 text-lg font-medium">Quotations</h3> */}
           <QuotationList searchQuery={searchQuery} statusFilter={statusFilter} />
         </div>
       )}

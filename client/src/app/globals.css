@@ -5,6 +5,7 @@
   --foreground: #171717;
   --colorPrimary: #1C5070;
   --colorSecondary: #33A6DB;
+  --lightBackground: #F3F9FF;
 }
 
 @theme inline {
@@ -14,7 +15,7 @@
   --font-mono: var(--font-geist-mono);
   --color-primary: var(--colorPrimary);
   --color-secondary: var(--colorSecondary);
- 
+  --light-background: var(--lightBackground);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,6 +52,10 @@ body {
 .primaryBtn{
   color: #fff;
   background-color: var(--colorPrimary);
+}
+
+.lightBg{
+  background-color: var(--lightBackground);
 }
 
 .primaryBtn:hover{

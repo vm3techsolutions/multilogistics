@@ -5,6 +5,7 @@ import { getAllQuotations, clearQuotationMessages, approveQuotation } from "@/st
 import { fetchCustomers } from "@/store/slices/customerSlice";
 import { getAgents } from "@/store/slices/agentSlice";
 import EditQuotation from "./EditQuotation";
+import QuotationView from "./QuotationView";
 
 const QuotationList = ({ searchQuery, statusFilter }) => {
     const dispatch = useDispatch();
@@ -16,6 +17,8 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
 
     const [editingQuotation, setEditingQuotation] = useState(null);
+
+    const [viewingQuotation, setViewingQuotation] = useState(null);
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -83,13 +86,22 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
     };
 
     if (editingQuotation) {
-    return (
-      <EditQuotation
-        quotationData={editingQuotation}
-        onClose={() => setEditingQuotation(null)}
-      />
-    );
-  }
+        return (
+            <EditQuotation
+                quotationData={editingQuotation}
+                onClose={() => setEditingQuotation(null)}
+            />
+        );
+    }
+
+    if (viewingQuotation) {
+        return (
+            <QuotationView
+                quotationData={viewingQuotation}
+                onClose={() => setViewingQuotation(null)}
+            />
+        );
+    }
 
     if (loading) return <p className="text-gray-500">Loading quotations...</p>;
     if (error) return <p className="text-red-500">Error: {error.message || error}</p>;
@@ -105,7 +117,7 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                     <>
                         <div className="overflow-x-auto">
                             <table className="min-w-full border border-gray-300 divide-y divide-gray-200">
-                                <thead className="bg-gray-100">
+                                <thead className="lightBg">
                                     <tr className="text-center">
                                         <th className="px-4 py-2 border">Date</th>
                                         <th className="px-4 py-2 border">Quotation No</th>
@@ -118,8 +130,13 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                 <tbody className="divide-y divide-gray-200">
                                     {currentRows.map((q) => (
                                         <tr key={q.id} className="text-center hover:bg-gray-50">
-                                            <td className="px-4 py-2 border">{new Date(q.created_at).toLocaleDateString()}</td>
-                                            <td className="px-4 py-2 border">{q.quote_no}</td>
+                                            <td className="px-4 py-2 border">{new Date(q.created_at).toLocaleDateString("en-GB")}</td>
+                                            <td
+                                                className="px-4 py-2 border border-gray-800 text-blue-600 cursor-pointer"
+                                                onClick={() => setViewingQuotation(q)}
+                                            >
+                                                {q.quote_no}
+                                            </td>
                                             <td className="px-4 py-2 border">{getCustomerName(q.customer_id)}</td>
                                             <td className="px-4 py-2 border">{q.address || "-"}</td>
                                             <td className="px-4 py-2 border">{getAgentName(q.agent_id)}</td>
