@@ -12,6 +12,7 @@ export default function SidebarAdmin({ username }) {
 
   const menuItems = [
     "Overview",
+    "Tracking",
     "Orders",
     "Shipments",
     "Quotation",
