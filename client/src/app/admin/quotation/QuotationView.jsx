@@ -47,16 +47,37 @@ const QuotationView = ({ quotationData }) => {
     window.location.reload();
   };
 
-  const downloadPDF = async () => {
-    const element = pdfRef.current;
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const width = pdf.internal.pageSize.getWidth();
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, width, height);
-    pdf.save(`quotation-${q.quote_no}.pdf`);
-  };
+ const downloadPDF = async () => {
+  const element = pdfRef.current;
+
+  const canvas = await html2canvas(element, {
+    scale: 1.8,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    windowWidth: element.scrollWidth,
+    windowHeight: element.scrollHeight,
+    scrollY: -window.scrollY,
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  // Auto-scale image to fit page height in SINGLE PAGE
+  let imgWidth = pageWidth;
+  let imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+  if (imgHeight > pageHeight) {
+    imgHeight = pageHeight;
+    imgWidth = (canvas.width * pageHeight) / canvas.height;
+  }
+
+  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+  pdf.save(`quotation-${q.quote_no}.pdf`);
+};
+
 
   // Include freight + FSC
   const freight = Number(q.total_freight_amount) || 0; 
@@ -86,6 +107,10 @@ const QuotationView = ({ quotationData }) => {
   document.head.appendChild(style);
 }, []);
 
+const globalSmallText = {
+  fontSize: "11px",
+  lineHeight: "1.3",
+};
 
   return (
     <div className="w-full flex justify-center pb-10">
@@ -156,7 +181,8 @@ const QuotationView = ({ quotationData }) => {
         </div>
 
         {/* PDF WRAPPER */}
-        <div ref={pdfRef} style={{ paddingLeft: "24px", paddingRight: "24px" }}>
+        <div ref={pdfRef} style={{ paddingLeft: "24px", paddingRight: "24px", paddingTop: "12px", paddingBottom: "12px",  width: "750px", margin: "0 auto", fontSize: "11px", ...globalSmallText }}>
+
 
           {/* HEADER */}
           <div
@@ -393,13 +419,16 @@ const thHeader = {
   background: "#1C5070",
   color: "white",
   textAlign: "center",
+  verticalAlign: "top",   // 👈 IMPORTANT FIX
 };
+
 
 /* NORMAL CELL */
 const td = {
   border: "1px solid #d1d5db",
   padding: "6px",
   fontSize: "14px",
+  verticalAlign: "top",
 };
 
 /* TABLE STYLE (rounded with working print mode) */
@@ -407,9 +436,10 @@ const tableStyle = {
   width: "100%",
   border: "1px solid #d1d5db",
   borderRadius: "12px",
-  borderCollapse: "separate",
+  borderCollapse: "collapse",
   borderSpacing: 0,
   overflow: "hidden",
+  verticalAlign: "top",
 };
 
 export default QuotationView;
