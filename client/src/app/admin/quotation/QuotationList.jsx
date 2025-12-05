@@ -141,7 +141,7 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                         <th className="px-4 py-2 border">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-200 text-sm">
                                     {currentRows.map((q) => (
                                         <tr key={q.id} className="text-center hover:bg-gray-50">
                                             <td className="px-4 py-2 border">{new Date(q.created_at).toLocaleDateString("en-GB")}</td>

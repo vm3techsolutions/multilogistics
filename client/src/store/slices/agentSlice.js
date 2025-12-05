@@ -42,6 +42,21 @@ export const updateAgent = createAsyncThunk(
   }
 );
 
+/* -------------------------------------------------------
+   🔄 Update agent status (Enable/Disable)
+------------------------------------------------------- */
+export const updateAgentStatus = createAsyncThunk(
+  "agents/updateStatus",
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosInstance.put(`/updateAgentStatus/${id}`, { status });
+      return data.agent; // should return updated agent
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 const agentSlice = createSlice({
   name: "agents",
   initialState: {
@@ -104,7 +119,17 @@ const agentSlice = createSlice({
       .addCase(updateAgent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+
+      // 🔄 Update Status
+      .addCase(updateAgentStatus.pending, (state) => { state.loading = true; })
+      .addCase(updateAgentStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        const index = state.agents.findIndex((a) => a.id === action.payload.id);
+        if (index !== -1) state.agents[index] = { ...state.agents[index], ...action.payload };
+      })
+      .addCase(updateAgentStatus.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
   },
 });
 

@@ -234,7 +234,7 @@ const getCourierExportById = async (req, res) => {
   const client = await db.connect();
   try {
     const exportResult = await client.query(`
-      SELECT ce.*, json_agg(cei) AS items
+      SELECT ce.*, COALESCE(json_agg(cei) FILTER (WHERE cei.id IS NOT NULL), '[]') AS items
       FROM courier_exports ce
       LEFT JOIN courier_export_items cei ON ce.id = cei.courier_export_id
       WHERE ce.id = $1

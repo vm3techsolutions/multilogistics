@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getAgents } from "@/store/slices/agentSlice";
+import { getAgents, updateAgentStatus  } from "@/store/slices/agentSlice";
 import { Search, X, Edit } from "lucide-react";
 import AddAgentForm from "./AddAgentForm";
 
@@ -49,6 +49,18 @@ export default function Agents() {
     startIndex,
     startIndex + agentsPerPage
   );
+
+   // ✅ Toggle Agent Status
+  const handleToggleStatus = (agent) => {
+    const newStatus = !agent.is_active;
+    if (
+      confirm(
+        `Are you sure you want to ${newStatus ? "activate" : "deactivate"} this agent?`
+      )
+    ) {
+      dispatch(updateAgentStatus({ id: agent.id, status: newStatus }));
+    }
+  };
 
   return (
     <div className="max-w-full mx-auto relative">
@@ -116,6 +128,7 @@ export default function Agents() {
                     <th className="p-3 border border-gray-200">Phone</th>
                     <th className="p-3 border border-gray-200">Address</th>
                     <th className="p-3 border border-gray-200">Type</th>
+                    <th className="p-3 border border-gray-200 text-center">Status</th>
                     <th className="p-3 border border-gray-200 text-center">
                       Actions
                     </th>
@@ -136,6 +149,17 @@ export default function Agents() {
                       <td className="p-3 border border-gray-200">{agent.phone}</td>
                       <td className="p-3 border border-gray-200">{agent.country}</td>
                       <td className="p-3 border border-gray-200">{agent.type}</td>
+                      {/* ✅ Status Column */}
+                      <td className="p-3 border border-gray-200 text-center">
+                        <button
+                          onClick={() => handleToggleStatus(agent)}
+                          className={`text-sm px-2 py-1 rounded ${
+                            agent.is_active ? "bg-green-500" : "bg-red-500"
+                          } text-white`}
+                        >
+                          {agent.is_active ? "Active" : "Inactive"}
+                        </button>
+                      </td>
                       <td className="p-3 border border-gray-200 text-center">
                         <button
                           onClick={() => {
