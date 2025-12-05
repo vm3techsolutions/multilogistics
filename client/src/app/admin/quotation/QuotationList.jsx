@@ -6,8 +6,10 @@ import { fetchCustomers } from "@/store/slices/customerSlice";
 import { getAgents } from "@/store/slices/agentSlice";
 import EditQuotation from "./EditQuotation";
 import QuotationView from "./QuotationView";
+import { useRouter } from "next/navigation";
 
 const QuotationList = ({ searchQuery, statusFilter }) => {
+    const router = useRouter();
     const dispatch = useDispatch();
     const { quotations, loading, error, successMessage } = useSelector((state) => state.quotation);
     const { list: customers } = useSelector((state) => state.customers);
@@ -131,9 +133,15 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                     {currentRows.map((q) => (
                                         <tr key={q.id} className="text-center hover:bg-gray-50">
                                             <td className="px-4 py-2 border">{new Date(q.created_at).toLocaleDateString("en-GB")}</td>
-                                            <td
+                                            {/* <td
                                                 className="px-4 py-2 border border-gray-800 text-blue-600 cursor-pointer"
                                                 onClick={() => setViewingQuotation(q)}
+                                            >
+                                                {q.quote_no}
+                                            </td> */}
+                                            <td
+                                                className="px-4 py-2 border border-gray-800 text-blue-600 cursor-pointer"
+                                                onClick={() => router.push(`/admin/quotation/invoice/${q.id}`)}
                                             >
                                                 {q.quote_no}
                                             </td>

@@ -63,6 +63,17 @@ body {
   transition: all var(--transitionSpeed) ease-in-out;
 }
 
+/* for invoice */
+
+.bg-secondary {
+  background-color: #1C5070; /* hex format works with html2canvas */
+  color: #ffffff;
+}
+
+.primary-text{
+  color: #1C5070;
+}
+
 /* Form */
 .form-input {
   @apply w-full p-3 rounded-lg bg-[#F7FCFE];

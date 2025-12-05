@@ -1,22 +1,33 @@
 "use client";
-import React, { useRef } from "react";
-import { useSelector } from "react-redux";
+import React, { useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { fetchCustomers } from "@/store/slices/customerSlice";
+import { getAgents } from "@/store/slices/agentSlice";
+import { Printer, Download, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-
-const QuotationView = ({ quotationData, onClose }) => {
+const QuotationView = ({ quotationData }) => {
   const q = quotationData;
+  const router = useRouter();
+  const dispatch = useDispatch();
 
-  // Fetch agent & customer info from slice
-  const agent = useSelector((state) => state.agent.agents);
-  const customer = useSelector((state) => state.customer.customers);
+  const { list: customers = [] } = useSelector((state) => state.customers);
+  const { agents = [] } = useSelector((state) => state.agents);
+
+  useEffect(() => {
+    dispatch(fetchCustomers());
+    dispatch(getAgents());
+  }, [dispatch]);
+
+  const customer = customers.find((c) => c.id === q.customer_id);
+  const agent = agents.find((a) => a.id === q.agent_id);
 
   const pdfRef = useRef(null);
 
-  if (!q) return <p className="text-center py-10">Loading...</p>;
+  if (!q) return <p style={{ textAlign: "center", padding: "40px" }}>Loading...</p>;
 
-  /* ------------------ SORTING CHARGES ------------------ */
   const courierCharge = q.charges.filter(
     (c) => c.type === "freight" && c.charge_name.toLowerCase() === "courier"
   );
@@ -27,122 +38,207 @@ const QuotationView = ({ quotationData, onClose }) => {
 
   const destinationCharges = q.charges.filter((c) => c.type === "destination");
 
-  /* ------------------ PDF DOWNLOAD ------------------ */
+  const printInvoice = () => {
+    const printContents = pdfRef.current.innerHTML;
+    const originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+  };
+
   const downloadPDF = async () => {
     const element = pdfRef.current;
     const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF("p", "mm", "a4");
     const width = pdf.internal.pageSize.getWidth();
     const height = (canvas.height * width) / canvas.width;
-
     pdf.addImage(imgData, "PNG", 0, 0, width, height);
     pdf.save(`quotation-${q.quote_no}.pdf`);
   };
 
-  /* ------------------ CALCULATE TOTALS ------------------ */
+  // Include freight + FSC
+  const freight = Number(q.total_freight_amount) || 0; 
+  // Include freight + FSC + destination
+  const finalTotal = Number(q.total) || 0;
+  //  calculate gst on finalTotal
+  const gst = (finalTotal) * 0.18;
+  const grandTotal = Number(q.final_total);
+
   const calcFreightTotal = (charge) => {
     if (charge.amount) return Number(charge.amount);
     return Number(charge.rate_per_kg || 0) * Number(charge.weight || 0);
   };
 
+  useEffect(() => {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @media print {
+      thead th {
+        background: #1C5070 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}, []);
+
+
   return (
     <div className="w-full flex justify-center pb-10">
-      <div className="w-full max-w-4xl bg-white shadow-xl rounded-2xl border p-8 relative">
-        
-        {/* ACTION BUTTONS */}
-        <div className="flex justify-end gap-3 mb-5">
+      <div
+        style={{
+          background: "white",
+          borderRadius: "16px",
+          border: "1px solid #e5e7eb",
+          padding: "32px",
+          position: "relative",
+          boxShadow: "0px 4px 20px rgba(0,0,0,0.1)",
+        }}
+        className="w-full max-w-4xl"
+      >
+
+        {/* Floating Buttons */}
+        <div
+          style={{
+            position: "absolute",
+            right: "-80px",
+            top: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "15px",
+          }}
+        >
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            onClick={printInvoice}
+            style={{
+              padding: "12px",
+              borderRadius: "50%",
+              background: "#2563eb",
+              color: "white",
+              cursor: "pointer",
+              boxShadow: "0px 3px 10px rgba(0,0,0,0.3)",
+            }}
           >
-            Print
+            <Printer size={20} />
           </button>
 
           <button
             onClick={downloadPDF}
-            className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+            style={{
+              padding: "12px",
+              borderRadius: "50%",
+              background: "#16a34a",
+              color: "white",
+              cursor: "pointer",
+              boxShadow: "0px 3px 10px rgba(0,0,0,0.3)",
+            }}
           >
-            Download PDF
+            <Download size={20} />
           </button>
 
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600"
+            onClick={() => router.push("/quotations")}
+            style={{
+              padding: "12px",
+              borderRadius: "50%",
+              background: "#dc2626",
+              color: "white",
+              cursor: "pointer",
+              boxShadow: "0px 3px 10px rgba(0,0,0,0.3)",
+            }}
           >
-            Close
+            <X size={20} />
           </button>
         </div>
 
-        {/* QUOTATION AREA */}
-        <div ref={pdfRef} className="px-6">
+        {/* PDF WRAPPER */}
+        <div ref={pdfRef} style={{ paddingLeft: "24px", paddingRight: "24px" }}>
 
           {/* HEADER */}
-          <div className="flex justify-between items-start border-b pb-4">
-            <img src="/assets/logo/logo.png" alt="Logo" className="h-16" />
+          <div
+            style={{
+              borderBottom: "1px solid #d1d5db",
+              paddingBottom: "10px",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
+            <img src="/assets/logo/logo.png" style={{ height: "80px" }} />
 
-            <div className="text-right text-sm">
+            <div style={{ textAlign: "right", fontSize: "14px" }}>
               <p><strong>Quotation No:</strong> {q.quote_no}</p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(q.created_at).toLocaleDateString("en-GB")}
-              </p>
-
-              {/* EMAIL & PHONE */}
-              <p><strong>Email:</strong> {agent?.email || "N/A"}</p>
-              <p><strong>Phone:</strong> {agent?.phone || "N/A"}</p>
-
-              <p><strong>Agent:</strong> {agent?.name || q.agent_name}</p>
-              <p><strong>Subject:</strong> {q.subject || "-"}</p>
+              <p><strong>Date:</strong> {new Date(q.created_at).toLocaleDateString("en-GB")}</p>
+              <p><strong>Email:</strong> info@multilogistics.co.in</p>
+              <p><strong>Phone:</strong> +91 8411007077</p>
             </div>
           </div>
 
-          {/* CUSTOMER + SHIPMENT DETAILS */}
-          <div className="grid grid-cols-2 gap-6 mt-6 text-sm">
-            <div className="p-4 bg-gray-50 rounded-xl border">
-              <h3 className="font-semibold text-lg text-[#1E123A] mb-2">
+          {/* CUSTOMER + SHIPMENT */}
+          <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+            <div
+              style={{
+                background: "#f9fafb",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                padding: "10px 16px",
+              }}
+            >
+              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>
                 Customer Details
               </h3>
+
               <p><strong>Name:</strong> {customer?.name || q.customer_name}</p>
               <p><strong>Email:</strong> {customer?.email}</p>
               <p><strong>Phone:</strong> {customer?.phone}</p>
-              <p className="mt-1"><strong>Address:</strong> {q.address}</p>
+              <p><strong>Address:</strong> {q.address}</p>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-xl border">
-              <h3 className="font-semibold text-lg text-[#1E123A] mb-2">
+            <div
+              style={{
+                background: "#f9fafb",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                padding: "10px 16px",
+              }}
+            >
+              <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>
                 Shipment Details
               </h3>
+
               <p><strong>Origin:</strong> {q.origin}</p>
               <p><strong>Destination:</strong> {q.destination}</p>
               <p><strong>Packages:</strong> {q.packages?.length}</p>
+              <p><strong>Agent:</strong> {agent?.name || q.agent_name}</p>
             </div>
           </div>
 
           {/* PACKAGES TABLE */}
-          <div className="mt-8">
-            <h3 className="font-semibold text-lg text-[#1E123A] mb-3">
+          <div style={{ marginTop: "10px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "10px" }}>
               Packages
             </h3>
 
-            <table className="w-full border rounded-xl overflow-hidden text-sm">
-              <thead className="bg-[#1E123A] text-white">
+            <table style={tableStyle}>
+              <thead>
                 <tr>
-                  <th className="border px-2 py-2">Length</th>
-                  <th className="border px-2 py-2">Width</th>
-                  <th className="border px-2 py-2">Height</th>
-                  <th className="border px-2 py-2">Qty</th>
+                  <th style={thHeader}>Length</th>
+                  <th style={thHeader}>Width</th>
+                  <th style={thHeader}>Height</th>
+                  <th style={thHeader}>Qty</th>
                 </tr>
               </thead>
 
               <tbody>
-                {q.packages?.map((p, i) => (
-                  <tr key={i} className="text-center hover:bg-gray-50">
-                    <td className="border px-2 py-2">{p.length}</td>
-                    <td className="border px-2 py-2">{p.width}</td>
-                    <td className="border px-2 py-2">{p.height}</td>
-                    <td className="border px-2 py-2">{p.same_size}</td>
+                {q.packages.map((p, i) => (
+                  <tr key={i} style={{ textAlign: "center" }}>
+                    <td style={td}>{p.length}</td>
+                    <td style={td}>{p.width}</td>
+                    <td style={td}>{p.height}</td>
+                    <td style={td}>{p.same_size}</td>
                   </tr>
                 ))}
               </tbody>
@@ -150,44 +246,58 @@ const QuotationView = ({ quotationData, onClose }) => {
           </div>
 
           {/* FREIGHT CHARGES */}
-          <div className="mt-10">
-            <h3 className="font-semibold text-lg text-[#1E123A] mb-3">
+          <div style={{ marginTop: "10px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "10px" }}>
               Freight Charges
             </h3>
 
-            <table className="w-full border rounded-xl overflow-hidden text-sm">
-              <thead className="bg-[#1E123A] text-white">
+            <table style={tableStyle}>
+              <thead>
                 <tr>
-                  <th className="px-3 py-2">Charge Name</th>
-                  <th className="px-3 py-2">Rate/KG</th>
-                  <th className="px-3 py-2">Weight</th>
-                  <th className="px-3 py-2">Amount</th>
-                  <th className="px-3 py-2">Total</th>
+                  <th style={thHeader}>Charge Name</th>
+                  <th style={thHeader}>Rate/KG</th>
+                  <th style={thHeader}>Weight</th>
+                  <th style={thHeader}>Amount</th>
+                  <th style={thHeader}>Total</th>
                 </tr>
               </thead>
 
               <tbody>
                 {[...courierCharge, ...otherFreightCharges].map((c, i) => {
-                  const total = calcFreightTotal(c);
+  const total = calcFreightTotal(c);
 
-                  return (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="border px-3 py-2">{c.charge_name}</td>
-                      <td className="border px-3 py-2 text-center">{c.rate_per_kg}</td>
-                      <td className="border px-3 py-2 text-center">{c.weight_kg}</td>
-                      <td className="border px-3 py-2 text-right">{c.amount}</td>
-                      <td className="border px-3 py-2 text-right font-semibold">
-                        {total}
-                      </td>
-                    </tr>
-                  );
-                })}
+  const isFsc = c?.charge_name?.toLowerCase() === "fsc";
 
-                <tr className="bg-gray-100">
-                  <td colSpan="4" className="border px-3 py-2 font-semibold">
+  return (
+    <tr key={i}>
+      {/* Charge Name */}
+      <td style={td}>{c.charge_name}</td>
+
+      {/* Rate Per KG */}
+      <td style={{ ...td, textAlign: "center" }}>{c.rate_per_kg}</td>
+
+      {/* Weight – blank when FSC */}
+      <td style={{ ...td, textAlign: "center" }}>
+        {isFsc ? "" : c.weight_kg}
+      </td>
+
+      {/* Amount */}
+      <td style={{ ...td, textAlign: "right" }}>{c.amount}</td>
+
+      {/* Total – show total_freight_amount for FSC */}
+      <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>
+        {isFsc ? q.total_freight_amount : total}
+      </td>
+    </tr>
+  );
+})}
+
+
+                <tr style={{ background: "#f3f4f6" }}>
+                  <td colSpan="4" style={{ ...td, fontWeight: "600" }}>
                     Freight Total
                   </td>
-                  <td className="border px-3 py-2 text-right font-bold">
+                  <td style={{ ...td, textAlign: "right", fontWeight: "700" }}>
                     {q.total_freight_amount}
                   </td>
                 </tr>
@@ -196,37 +306,43 @@ const QuotationView = ({ quotationData, onClose }) => {
           </div>
 
           {/* DESTINATION CHARGES */}
-          <div className="mt-10">
-            <h3 className="font-semibold text-lg text-[#1E123A] mb-3">
+          <div style={{ marginTop: "10px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "10px" }}>
               Destination Charges
             </h3>
 
-            <table className="w-full border rounded-xl overflow-hidden text-sm">
-              <thead className="bg-[#1E123A] text-white">
+            <table style={tableStyle}>
+              <thead>
                 <tr>
-                  <th className="px-3 py-2">Charge Name</th>
-                  <th className="px-3 py-2 text-right">Amount</th>
-                  <th className="px-3 py-2 text-right">Total</th>
+                  <th style={thHeader}>Charge Name</th>
+                  <th style={{ ...thHeader, textAlign: "right" }}>Amount</th>
+                  <th style={{ ...thHeader, textAlign: "right" }}>Total</th>
                 </tr>
               </thead>
 
               <tbody>
-                {destinationCharges.map((c, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="border px-3 py-2">{c.charge_name}</td>
-                    <td className="border px-3 py-2 text-right">{c.amount}</td>
-                    <td className="border px-3 py-2 text-right font-semibold">
-                      {q.total}
-                    </td>
-                  </tr>
-                ))}
+                {destinationCharges.map((c, i) => {
+                  const destSumTillRow = destinationCharges
+                    .slice(0, i + 1)
+                    .reduce((sum, item) => sum + Number(item.amount), 0);
 
-                <tr className="bg-gray-100">
-                  <td className="border px-3 py-2 font-semibold">
-                    Destination Total
-                  </td>
-                  <td colSpan="2" className="border px-3 py-2 text-right font-bold">
-                    {q.total}
+                  const baseAmount = Number(q.total_freight_amount);
+                  const rowTotal = baseAmount + destSumTillRow;
+
+                  return (
+                    <tr key={i}>
+                      <td style={td}>{c.charge_name}</td>
+                      <td style={{ ...td, textAlign: "right" }}>{c.amount}</td>
+                      <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>{rowTotal}</td>
+                    </tr>
+                  );
+                })}
+
+                <tr style={{ background: "#f3f4f6" }}>
+                  <td style={{ ...td, fontWeight: "600" }}>Final Total</td>
+                  <td colSpan="2" style={{ ...td, textAlign: "right", fontWeight: "700" }}>
+                    {Number(q.total_freight_amount) +
+                      destinationCharges.reduce((sum, item) => sum + Number(item.amount), 0)}
                   </td>
                 </tr>
               </tbody>
@@ -234,16 +350,66 @@ const QuotationView = ({ quotationData, onClose }) => {
           </div>
 
           {/* GRAND TOTAL */}
-          <div className="mt-10 text-right">
-            <p className="text-md"><strong>GST:</strong> 18%</p>
-            <p className="text-xl font-bold text-[#FF442A] mt-2">
-              Grand Total: ₹{q.final_total}
-            </p>
+          <div style={{ marginTop: "10px" }}>
+            <table style={tableStyle}>
+              <tbody>
+                <tr>
+                  <td style={{ ...td, fontWeight: "600" }}>GST (18%)</td>
+                  <td style={{ ...td, textAlign: "right" }}>{gst.toFixed(2)}</td>
+                </tr>
+
+                <tr style={{ background: "#f3f4f6" }}>
+                  <td style={{ ...td, fontWeight: "700", fontSize: "18px", color: "#1f2937" }}>
+                    Grand Total
+                  </td>
+                  <td
+                    style={{
+                      ...td,
+                      fontWeight: "700",
+                      fontSize: "18px",
+                      textAlign: "right",
+                      color: "#15803d",
+                    }}
+                  >
+                    ₹{grandTotal.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+
         </div>
       </div>
     </div>
   );
+};
+
+/* --- FIXED HEADER BACKGROUND (works with print + PDF) --- */
+const thHeader = {
+  border: "1px solid #d1d5db",
+  padding: "6px",
+  fontSize: "14px",
+  fontWeight: "600",
+  background: "#1C5070",
+  color: "white",
+  textAlign: "center",
+};
+
+/* NORMAL CELL */
+const td = {
+  border: "1px solid #d1d5db",
+  padding: "6px",
+  fontSize: "14px",
+};
+
+/* TABLE STYLE (rounded with working print mode) */
+const tableStyle = {
+  width: "100%",
+  border: "1px solid #d1d5db",
+  borderRadius: "12px",
+  borderCollapse: "separate",
+  borderSpacing: 0,
+  overflow: "hidden",
 };
 
 export default QuotationView;
