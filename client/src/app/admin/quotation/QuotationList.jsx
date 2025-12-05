@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllQuotations, clearQuotationMessages, approveQuotation } from "@/store/slices/quotationSlice";
+import { getAllQuotations, clearQuotationMessages, approveQuotation, sendQuotationEmail  } from "@/store/slices/quotationSlice";
 import { fetchCustomers } from "@/store/slices/customerSlice";
 import { getAgents } from "@/store/slices/agentSlice";
 import EditQuotation from "./EditQuotation";
@@ -96,14 +96,25 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
         );
     }
 
-    if (viewingQuotation) {
-        return (
-            <QuotationView
-                quotationData={viewingQuotation}
-                onClose={() => setViewingQuotation(null)}
-            />
-        );
-    }
+    // if (viewingQuotation) {
+    //     return (
+    //         <QuotationView
+    //             quotationData={viewingQuotation}
+    //             onClose={() => setViewingQuotation(null)}
+    //         />
+    //     );
+    // }
+
+    const handleSendEmail = (id) => {
+    dispatch(sendQuotationEmail(id))
+        .unwrap()
+        .then(() => {
+            alert("Email sent successfully!");
+        })
+        .catch((err) => {
+            alert("Failed to send email: " + (err?.message || "Unknown error"));
+        });
+};
 
     if (loading) return <p className="text-gray-500">Loading quotations...</p>;
     if (error) return <p className="text-red-500">Error: {error.message || error}</p>;
@@ -126,6 +137,7 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                         <th className="px-4 py-2 border">Customer Name</th>
                                         <th className="px-4 py-2 border">Address</th>
                                         <th className="px-4 py-2 border">Agent Name</th>
+                                        <th className="px-4 py-2 border">Status</th>
                                         <th className="px-4 py-2 border">Action</th>
                                     </tr>
                                 </thead>
@@ -133,12 +145,7 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                     {currentRows.map((q) => (
                                         <tr key={q.id} className="text-center hover:bg-gray-50">
                                             <td className="px-4 py-2 border">{new Date(q.created_at).toLocaleDateString("en-GB")}</td>
-                                            {/* <td
-                                                className="px-4 py-2 border border-gray-800 text-blue-600 cursor-pointer"
-                                                onClick={() => setViewingQuotation(q)}
-                                            >
-                                                {q.quote_no}
-                                            </td> */}
+                                            
                                             <td
                                                 className="px-4 py-2 border border-gray-800 text-blue-600 cursor-pointer"
                                                 onClick={() => router.push(`/admin/quotation/invoice/${q.id}`)}
@@ -148,7 +155,20 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                             <td className="px-4 py-2 border">{getCustomerName(q.customer_id)}</td>
                                             <td className="px-4 py-2 border">{q.address || "-"}</td>
                                             <td className="px-4 py-2 border">{getAgentName(q.agent_id)}</td>
-                                            <td className="px-4 py-2 border flex justify-center gap-2">
+                                            <td className="px-4 py-2 border">
+                                                <span
+                                                    className={`px-2 py-1 rounded text-white text-sm ${q.status === "approved"
+                                                            ? "bg-green-600"
+                                                            : q.status === "rejected"
+                                                                ? "bg-red-600"
+                                                                : "bg-yellow-500"
+                                                        }`}
+                                                >
+                                                    {q.status}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-2 border text-sm flex justify-center gap-2">
                                                 <button
                                                     className="px-3 py-1 primaryBtn text-white rounded-md "
                                                     onClick={() => openStatusPopup(q)}
@@ -162,9 +182,15 @@ const QuotationList = ({ searchQuery, statusFilter }) => {
                                                     Edit
                                                 </button>
 
-                                                {/* <button className="px-3 py-1 primaryBtn text-white rounded-md ">
-                                                    Delete
-                                                </button> */}
+                                                {/* ⭐ Show Send Email only when status is draft */}
+                                                {q.status === "draft" && (
+                                                    <button
+                                                        className="px-3 py-1 primaryBtn text-white rounded-md "
+                                                        onClick={() => handleSendEmail(q.id)}
+                                                    >
+                                                        Send Email
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

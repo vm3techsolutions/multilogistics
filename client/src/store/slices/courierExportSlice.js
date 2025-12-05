@@ -1,7 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosInstance from "@/api/axiosInstance";
 
-const API_BASE_URL = "http://localhost:5000/api";
+/* ------------------------- CREATE COURIER EXPORT ------------------------- */
+export const createCourierExport = createAsyncThunk(
+  "courierExports/create",
+  async ({ formData, confirm = false }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axiosInstance.post(`/courier-exports${confirm ? "?confirm=true" : ""}`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.courier_export || res.data;
+    } catch (error) {
+      // Include full error data for handling 409 conflicts
+      return rejectWithValue(error.response?.data || { message: "Failed to create courier export" });
+    }
+  }
+);
 
 /* ------------------------- FETCH ALL COURIER EXPORTS ------------------------- */
 export const fetchCourierExports = createAsyncThunk(
@@ -19,7 +34,7 @@ export const fetchCourierExports = createAsyncThunk(
   }
 );
 
-/* ------------------------- FETCH COURIER EXPORTS BY ID------------------------- */
+/* ------------------------- FETCH COURIER EXPORT BY ID------------------------- */
 export const fetchCourierExportById = createAsyncThunk(
   "courierExports/fetchById",
   async (id, { rejectWithValue }) => {
@@ -37,22 +52,6 @@ export const fetchCourierExportById = createAsyncThunk(
   }
 );
 
-/* --------------------------- CREATE COURIER EXPORT --------------------------- */
-export const createCourierExport = createAsyncThunk(
-  "courierExports/create",
-  async (formData, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axiosInstance.post(`/courier-exports`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data.courier_export || res.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to create courier export");
-    }
-  }
-);
-
 /* ------------------------------- SLICE SETUP ------------------------------- */
 const courierExportSlice = createSlice({
   name: "courierExports",
@@ -62,6 +61,7 @@ const courierExportSlice = createSlice({
     loading: false,
     success: false,
     error: null,
+    existingExports: [], // For handling 409 conflict
     currentPage: 1,
     perPage: 5,
   },
@@ -77,6 +77,7 @@ const courierExportSlice = createSlice({
       state.loading = false;
       state.success = false;
       state.error = null;
+      state.existingExports = [];
     },
     clearSelectedExport: (state) => {
       state.selectedExport = null;
@@ -84,7 +85,7 @@ const courierExportSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ✅ Fetch all courier exports
+      // Fetch all exports
       .addCase(fetchCourierExports.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -98,7 +99,7 @@ const courierExportSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ✅ Fetch single courier export
+      // Fetch single export
       .addCase(fetchCourierExportById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -113,24 +114,37 @@ const courierExportSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ✅ Create courier export
+      // Create export
       .addCase(createCourierExport.pending, (state) => {
         state.loading = true;
         state.success = false;
         state.error = null;
+        state.existingExports = [];
       })
       .addCase(createCourierExport.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.list.unshift(action.payload); // add new export to top
+        state.list.unshift(action.payload);
       })
       .addCase(createCourierExport.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.success = false;
+
+        // If backend returned 409 conflict with existing_exports
+        if (action.payload?.existing_exports) {
+          state.existingExports = action.payload.existing_exports;
+          state.error = action.payload.message;
+        } else {
+          state.error = action.payload?.message || "Failed to create courier export";
+        }
       });
   },
 });
 
-/* ----------------------------- EXPORT ACTIONS ----------------------------- */
-export const { setPage, setPerPage, resetCourierExportState, clearSelectedExport } = courierExportSlice.actions;
+export const {
+  setPage,
+  setPerPage,
+  resetCourierExportState,
+  clearSelectedExport,
+} = courierExportSlice.actions;
 export default courierExportSlice.reducer;

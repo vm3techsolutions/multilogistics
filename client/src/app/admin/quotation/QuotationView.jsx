@@ -166,7 +166,7 @@ const globalSmallText = {
           </button>
 
           <button
-            onClick={() => router.push("/quotations")}
+            onClick={() => router.push("/admin/quotation")}
             style={{
               padding: "12px",
               borderRadius: "50%",

@@ -1,357 +1,35 @@
-// "use client";
-// import React, { useState, useEffect, useRef } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import Swal from "sweetalert2";
-// import { Search } from "lucide-react";
-// import {
-//   fetchAllQuotations,
-//   fetchQuotationByNumber,
-//   clearSelectedQuotation,
-// } from "@/store/slices/quotationSlice";
-// import {
-//   createCourierExport,
-//   resetCourierExportState,
-// } from "@/store/slices/courierExportSlice";
-
-// export default function CreateCourierExport() {
-//   const dispatch = useDispatch();
-//   const dropdownRef = useRef(null);
-
-//   const {
-//     quotations: allQuotations,
-//     selectedQuotation,
-//     loading: quotationLoading,
-//   } = useSelector((state) => state.quotation);
-
-//   const { loading: exportLoading, success, error } = useSelector(
-//     (state) => state.courierExports
-//   );
-
-//   const [quotationNo, setQuotationNo] = useState("");
-//   const [suggestions, setSuggestions] = useState([]);
-//   const [showDropdown, setShowDropdown] = useState(false);
-
-//   const [formData, setFormData] = useState({
-//     quotation_id: "",
-//     booking_date: "",
-//     document_type: "",
-//     shipper_name: "",
-//     shipper_email: "",
-//     shipper_address: "",
-//     shipper_mobile: "",
-//     consignee_name: "",
-//     consignee_email: "",
-//     consignee_address: "",
-//     consignee_mobile: "",
-//     place_of_delivery: "",
-//     forwarding_company: "",
-//     correspondence_number: "",
-//     length: "",
-//     width: "",
-//     height: "",
-//     weight: "",
-//     package_count: "",
-//     amount: "",
-//     items: [
-//       { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
-//     ],
-//   });
-
-//   // ✅ Fetch quotations initially
-//   useEffect(() => {
-//     dispatch(fetchAllQuotations());
-//   }, [dispatch]);
-
-//   // ✅ Autofill only key quotation-related fields (not package dimensions)
-//   useEffect(() => {
-//     if (selectedQuotation) {
-//       const q = selectedQuotation;
-
-//       setFormData((prev) => ({
-//         ...prev,
-//         quotation_id: q.id,
-//         shipper_name: q.customer?.name || "",
-//         shipper_email: q.customer?.email || "",
-//         shipper_address: q.customer?.address || "",
-//         shipper_mobile: q.customer?.phone || "",
-//         consignee_name: q.agent?.name || "",
-//         consignee_email: q.agent?.email || "",
-//         consignee_address: q.agent?.address || "",
-//         consignee_mobile: q.agent?.mobile || "",
-//         place_of_delivery: q.destination || "",
-//         amount:
-//           q.charges?.reduce((t, x) => t + Number(x.amount || 0), 0) || "",
-//       }));
-
-//       Swal.fire({
-//         icon: "success",
-//         title: "Quotation Loaded",
-//         text: "Quotation details auto-filled successfully.",
-//         timer: 1200,
-//         showConfirmButton: false,
-//       });
-//     }
-//   }, [selectedQuotation]);
-
-//   // ✅ Filter quotation suggestions
-//   useEffect(() => {
-//     if (!quotationNo.trim()) {
-//       setSuggestions([]);
-//       setShowDropdown(false);
-//       return;
-//     }
-//     const matched = allQuotations
-//       ?.filter((item) =>
-//         item.quote_no?.toLowerCase().includes(quotationNo.toLowerCase())
-//       )
-//       .slice(0, 10);
-//     setSuggestions(matched);
-//     setShowDropdown(matched?.length > 0);
-//   }, [quotationNo, allQuotations]);
-
-//   // ✅ Close dropdown when clicking outside
-//   useEffect(() => {
-//     const handleClickOutside = (e) => {
-//       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-//         setShowDropdown(false);
-//       }
-//     };
-//     document.addEventListener("mousedown", handleClickOutside);
-//     return () => document.removeEventListener("mousedown", handleClickOutside);
-//   }, []);
-
-//   // ✅ Input handlers
-//   const handleChange = (e) =>
-//     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-//   const handleItemChange = (i, e) => {
-//     const updated = [...formData.items];
-//     updated[i][e.target.name] = e.target.value;
-//     setFormData({ ...formData, items: updated });
-//   };
-
-//   const addItem = () =>
-//     setFormData({
-//       ...formData,
-//       items: [
-//         ...formData.items,
-//         { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
-//       ],
-//     });
-
-//   const removeItem = (i) =>
-//     setFormData({
-//       ...formData,
-//       items: formData.items.filter((_, idx) => idx !== i),
-//     });
-
-//   const handleSelectSuggestion = (quote_no) => {
-//     setQuotationNo(quote_no);
-//     setShowDropdown(false);
-//     dispatch(fetchQuotationByNumber(quote_no));
-//   };
-
-//   // ✅ Submit form
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-
-//     const prepared = {
-//       ...formData,
-//       package_count: Number(formData.package_count),
-//       weight: Number(formData.weight),
-//       amount: Number(formData.amount),
-//       length: Number(formData.length),
-//       width: Number(formData.width),
-//       height: Number(formData.height),
-//       items: formData.items.map((x) => ({
-//         ...x,
-//         item_quantity: Number(x.item_quantity),
-//         item_weight: Number(x.item_weight),
-//       })),
-//     };
-
-//     await dispatch(createCourierExport(prepared));
-//   };
-
-//   // ✅ Show success or duplicate quotation error
-//   useEffect(() => {
-//     if (success) {
-//       Swal.fire("Success", "Courier Export created successfully!", "success");
-//       setQuotationNo("");
-//       setFormData({
-//         quotation_id: "",
-//         booking_date: "",
-//         document_type: "",
-//         shipper_name: "",
-//         shipper_email: "",
-//         shipper_address: "",
-//         shipper_mobile: "",
-//         consignee_name: "",
-//         consignee_email: "",
-//         consignee_address: "",
-//         consignee_mobile: "",
-//         place_of_delivery: "",
-//         forwarding_company: "",
-//         correspondence_number: "",
-//         length: "",
-//         width: "",
-//         height: "",
-//         weight: "",
-//         package_count: "",
-//         amount: "",
-//         items: [
-//           { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
-//         ],
-//       });
-//       dispatch(clearSelectedQuotation());
-//       dispatch(resetCourierExportState());
-//     }
-
-//     if (error && error.includes("already exists")) {
-//       Swal.fire({
-//         icon: "error",
-//         title: "Duplicate Quotation",
-//         text: "Courier export already exists for this quotation!",
-//       });
-//       dispatch(resetCourierExportState());
-//     }
-//   }, [success, error, dispatch]);
-
-//   return (
-//     <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
-//       {/* 🔍 Search Quotation */}
-//       <div className="relative mb-6" ref={dropdownRef}>
-//         <label className="font-semibold mb-1 block">Search Quotation</label>
-//         <div className="flex items-center">
-//           <Search className="mr-2" />
-//           <input
-//             className="border p-2 w-full rounded"
-//             value={quotationNo}
-//             onChange={(e) => setQuotationNo(e.target.value)}
-//             placeholder="Type quotation number..."
-//           />
-//         </div>
-
-//         {showDropdown && (
-//           <ul className="absolute w-full bg-white border shadow z-50 max-h-60 overflow-auto">
-//             {suggestions.map((s, i) => (
-//               <li
-//                 key={i}
-//                 onClick={() => handleSelectSuggestion(s.quote_no)}
-//                 className="p-2 cursor-pointer hover:bg-gray-100"
-//               >
-//                 <div className="font-semibold">{s.quote_no}</div>
-//                 <div className="text-xs text-gray-500">{s.subject}</div>
-//               </li>
-//             ))}
-//           </ul>
-//         )}
-//       </div>
-
-//       {/* 📦 Form */}
-//       <form onSubmit={handleSubmit} className="space-y-4">
-//         <h2 className="text-xl font-bold">Courier Export Details</h2>
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//           <input type="date" name="booking_date" value={formData.booking_date} onChange={handleChange} className="border p-3 rounded" />
-//           <select name="document_type" value={formData.document_type} onChange={handleChange} className="border p-3 rounded">
-//             <option value="">Select Document Type</option>
-//             <option value="document">Document</option>
-//             <option value="non-document">Non-Document</option>
-//           </select>
-
-//           <input name="shipper_name" value={formData.shipper_name} onChange={handleChange} placeholder="Shipper Name" className="border p-3 rounded" />
-//           <input name="shipper_email" value={formData.shipper_email} onChange={handleChange} placeholder="Shipper Email" className="border p-3 rounded" />
-//           <input name="shipper_address" value={formData.shipper_address} onChange={handleChange} placeholder="Shipper Address" className="border p-3 rounded" />
-//           <input name="shipper_mobile" value={formData.shipper_mobile} onChange={handleChange} placeholder="Shipper Mobile" className="border p-3 rounded" />
-
-//           <input name="consignee_name" value={formData.consignee_name} onChange={handleChange} placeholder="Consignee Name" className="border p-3 rounded" />
-//           <input name="consignee_email" value={formData.consignee_email} onChange={handleChange} placeholder="Consignee Email" className="border p-3 rounded" />
-//           <input name="consignee_address" value={formData.consignee_address} onChange={handleChange} placeholder="Consignee Address" className="border p-3 rounded" />
-//           <input name="consignee_mobile" value={formData.consignee_mobile} onChange={handleChange} placeholder="Consignee Mobile" className="border p-3 rounded" />
-
-//           <input name="place_of_delivery" value={formData.place_of_delivery} onChange={handleChange} placeholder="Place of Delivery" className="border p-3 rounded" />
-//           <input name="forwarding_company" value={formData.forwarding_company} onChange={handleChange} placeholder="Forwarding Company" className="border p-3 rounded" />
-//           <input name="correspondence_number" value={formData.correspondence_number} onChange={handleChange} placeholder="Correspondence Number" className="border p-3 rounded" />
-//         </div>
-
-//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//           <input name="length" value={formData.length} onChange={handleChange} placeholder="Length" className="border p-3 rounded" />
-//           <input name="width" value={formData.width} onChange={handleChange} placeholder="Width" className="border p-3 rounded" />
-//           <input name="height" value={formData.height} onChange={handleChange} placeholder="Height" className="border p-3 rounded" />
-//           <input name="weight" value={formData.weight} onChange={handleChange} placeholder="Weight" className="border p-3 rounded" />
-//         </div>
-
-//         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-//           <input name="package_count" value={formData.package_count} onChange={handleChange} placeholder="Package Count" className="border p-3 rounded" />
-//           <input name="amount" value={formData.amount} onChange={handleChange} placeholder="Amount" className="border p-3 rounded" />
-//         </div>
-
-//         <div className="border p-4 rounded">
-//           <h3 className="font-semibold mb-3">Items</h3>
-//           {formData.items.map((item, i) => (
-//             <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-//               <input name="item_name" value={item.item_name} placeholder="Name" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-//               <input name="item_quantity" value={item.item_quantity} placeholder="Qty" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-//               <input name="item_weight" value={item.item_weight} placeholder="Weight" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-//               <input name="item_description" value={item.item_description} placeholder="Description" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-//               {formData.items.length > 1 && (
-//                 <button type="button" className="text-red-600" onClick={() => removeItem(i)}>Remove</button>
-//               )}
-//             </div>
-//           ))}
-//           <button type="button" onClick={addItem} className="bg-blue-600 text-white px-3 py-2 rounded">
-//             + Add Item
-//           </button>
-//         </div>
-
-//         <button type="submit" disabled={exportLoading || quotationLoading} className="w-full bg-green-600 text-white py-3 rounded">
-//           {exportLoading ? "Processing..." : "Create Export"}
-//         </button>
-//       </form>
-//     </div>
-//   );
-// }
-
-
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Swal from "sweetalert2";
-import { Search } from "lucide-react";
-import {
-  fetchAllQuotations,
-  fetchQuotationByNumber,
-  clearSelectedQuotation,
-} from "@/store/slices/quotationSlice";
 import {
   createCourierExport,
   resetCourierExportState,
 } from "@/store/slices/courierExportSlice";
+import {
+  getQuotationByQuoteNo,
+  resetQuotationState,
+} from "@/store/slices/quotationSlice";
+import {
+  fetchCustomerById,
+  clearSelectedCustomer,
+} from "@/store/slices/customerSlice";
+import { Trash2, RefreshCw } from "lucide-react"; 
+import { getAgents } from "@/store/slices/agentSlice";
 
-export default function CreateCourierExport() {
+const CreateCourierExportPage = () => {
   const dispatch = useDispatch();
-  const dropdownRef = useRef(null);
-  const userSelectedQuotation = useRef(false); // ✅ flag to detect manual selection
-
-  const {
-    quotations: allQuotations,
-    selectedQuotation,
-    loading: quotationLoading,
-  } = useSelector((state) => state.quotation);
-
-  const { loading: exportLoading, success, error } = useSelector(
+  const { singleQuotation } = useSelector((state) => state.quotation);
+  const { selectedCustomer } = useSelector((state) => state.customers);
+  const { loading, success, error, existingExports } = useSelector(
     (state) => state.courierExports
   );
-
-  const [quotationNo, setQuotationNo] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const { agents } = useSelector((state) => state.agents); // get all agents
 
   const [formData, setFormData] = useState({
+    quotation_no: "", 
     quotation_id: "",
     booking_date: "",
-    document_type: "",
+    document_type: "document",
     shipper_name: "",
     shipper_email: "",
     shipper_address: "",
@@ -369,87 +47,73 @@ export default function CreateCourierExport() {
     weight: "",
     package_count: "",
     amount: "",
-    items: [
-      { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
-    ],
+    items: [],
   });
 
-  // ✅ Fetch quotations initially
+  // Get all agents
   useEffect(() => {
-    dispatch(fetchAllQuotations());
-  }, [dispatch]);
+  dispatch(getAgents());
+}, [dispatch]);
 
-  // ✅ Autofill only when user manually selects a quotation
+  // Fetch quotation when quotation_id changes
   useEffect(() => {
-    if (selectedQuotation && userSelectedQuotation.current) {
-      const q = selectedQuotation;
+    if (formData.quotation_no.trim()) {
+      dispatch(getQuotationByQuoteNo(formData.quotation_no.trim()));
+    } else {
+      dispatch(resetQuotationState());
+      dispatch(clearSelectedCustomer());
+    }
+  }, [formData.quotation_no, dispatch]);
 
+  // Fetch customer when quotation is loaded
+  useEffect(() => {
+    if (singleQuotation?.customer_id) {
+      dispatch(fetchCustomerById(singleQuotation.customer_id));
+    } else {
+      dispatch(clearSelectedCustomer());
+    }
+  }, [singleQuotation, dispatch]);
+
+  // 1️⃣ Update form with quotation packages & weight
+  useEffect(() => {
+    if (singleQuotation) {
+      const agent = agents.find(a => a.id === singleQuotation.agent_id);
       setFormData((prev) => ({
         ...prev,
-        quotation_id: q.id,
-        shipper_name: q.customer?.name || "",
-        shipper_email: q.customer?.email || "",
-        shipper_address: q.customer?.address || "",
-        shipper_mobile: q.customer?.phone || "",
-        consignee_name: q.agent?.name || "",
-        consignee_email: q.agent?.email || "",
-        consignee_address: q.agent?.address || "",
-        consignee_mobile: q.agent?.mobile || "",
-        place_of_delivery: q.destination || "",
-        amount:
-          q.charges?.reduce((t, x) => t + Number(x.amount || 0), 0) || "",
+        quotation_id: singleQuotation.id,
+        place_of_delivery: singleQuotation.destination || "",
+        weight: singleQuotation.chargeable_weight || "",
+        package_count: singleQuotation.packages?.length || "",
+        amount: singleQuotation.final_total || "",
+        forwarding_company: agent ? agent.name : "",
       }));
-
-      Swal.fire({
-        icon: "success",
-        title: "Quotation Loaded",
-        text: "Quotation details auto-filled successfully.",
-        timer: 1200,
-        showConfirmButton: false,
-      });
-
-      userSelectedQuotation.current = false; // reset flag
     }
-  }, [selectedQuotation]);
+  }, [singleQuotation, agents]);
 
-  // ✅ Filter quotation suggestions
+  // 2️⃣ Update shipper details when customer data is available
   useEffect(() => {
-    if (!quotationNo.trim()) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      return;
+    if (selectedCustomer) {
+      setFormData((prev) => ({
+        ...prev,
+        shipper_name: selectedCustomer.name || "",
+        shipper_email: selectedCustomer.email || "",
+        shipper_address: selectedCustomer.address || "",
+        shipper_mobile: selectedCustomer.phone || "",
+      }));
     }
-    const matched = allQuotations
-      ?.filter((item) =>
-        item.quote_no?.toLowerCase().includes(quotationNo.toLowerCase())
-      )
-      .slice(0, 10);
-    setSuggestions(matched);
-    setShowDropdown(matched?.length > 0);
-  }, [quotationNo, allQuotations]);
+  }, [selectedCustomer]);
 
-  // ✅ Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // ✅ Input handlers
-  const handleChange = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const handleItemChange = (i, e) => {
-    const updated = [...formData.items];
-    updated[i][e.target.name] = e.target.value;
-    setFormData({ ...formData, items: updated });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const addItem = () =>
+  const handleItemChange = (index, e) => {
+    const newItems = [...formData.items];
+    newItems[index][e.target.name] = e.target.value;
+    setFormData({ ...formData, items: newItems });
+  };
+
+  const addItem = () => {
     setFormData({
       ...formData,
       items: [
@@ -457,193 +121,279 @@ export default function CreateCourierExport() {
         { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
       ],
     });
+  };
 
-  const removeItem = (i) =>
+  const removeItem = (index) => {
+    const newItems = [...formData.items];
+    newItems.splice(index, 1);
+    setFormData({ ...formData, items: newItems });
+  };
+
+  const handleSubmit = (confirm = false) => {
+    const submitData = {
+    ...formData,
+    quotation_id: singleQuotation?.id, // numeric id
+    weight: formData.weight ? parseFloat(formData.weight) : 0,
+    length: formData.length ? parseFloat(formData.length) : 0,
+    width: formData.width ? parseFloat(formData.width) : 0,
+    height: formData.height ? parseFloat(formData.height) : 0,
+    package_count: formData.package_count ? parseInt(formData.package_count) : 0,
+    amount: formData.amount ? parseFloat(formData.amount) : 0,
+    items: formData.items.map(item => ({
+      ...item,
+      item_quantity: item.item_quantity ? parseInt(item.item_quantity) : 0,
+      item_weight: item.item_weight ? parseFloat(item.item_weight) : 0,
+    })),
+  };
+  dispatch(createCourierExport({ formData: submitData, confirm }));
+  };
+
+  const handleReset = () => {
     setFormData({
-      ...formData,
-      items: formData.items.filter((_, idx) => idx !== i),
+      quotation_id: "",
+      booking_date: "",
+      document_type: "document",
+      shipper_name: "",
+      shipper_email: "",
+      shipper_address: "",
+      shipper_mobile: "",
+      consignee_name: "",
+      consignee_email: "",
+      consignee_address: "",
+      consignee_mobile: "",
+      place_of_delivery: "",
+      forwarding_company: "",
+      correspondence_number: "",
+      length: "",
+      width: "",
+      height: "",
+      weight: "",
+      package_count: "",
+      amount: "",
+      items: [
+        { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
+      ],
     });
-
-  // ✅ When user selects a suggestion
-  const handleSelectSuggestion = (quote_no) => {
-    setQuotationNo(quote_no);
-    setShowDropdown(false);
-    userSelectedQuotation.current = true; // mark manual selection
-    dispatch(fetchQuotationByNumber(quote_no));
+    dispatch(resetCourierExportState());
+    dispatch(resetQuotationState());
+    dispatch(clearSelectedCustomer());
   };
-
-  // ✅ Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const prepared = {
-      ...formData,
-      package_count: Number(formData.package_count),
-      weight: Number(formData.weight),
-      amount: Number(formData.amount),
-      length: Number(formData.length),
-      width: Number(formData.width),
-      height: Number(formData.height),
-      items: formData.items.map((x) => ({
-        ...x,
-        item_quantity: Number(x.item_quantity),
-        item_weight: Number(x.item_weight),
-      })),
-    };
-
-    await dispatch(createCourierExport(prepared));
-  };
-
-  // ✅ Show success or duplicate quotation error
-  useEffect(() => {
-    if (success) {
-      Swal.fire("Success", "Courier Export created successfully!", "success");
-      setQuotationNo("");
-      setFormData({
-        quotation_id: "",
-        booking_date: "",
-        document_type: "",
-        shipper_name: "",
-        shipper_email: "",
-        shipper_address: "",
-        shipper_mobile: "",
-        consignee_name: "",
-        consignee_email: "",
-        consignee_address: "",
-        consignee_mobile: "",
-        place_of_delivery: "",
-        forwarding_company: "",
-        correspondence_number: "",
-        length: "",
-        width: "",
-        height: "",
-        weight: "",
-        package_count: "",
-        amount: "",
-        items: [
-          { item_name: "", item_quantity: "", item_weight: "", item_description: "" },
-        ],
-      });
-      dispatch(clearSelectedQuotation());
-      dispatch(resetCourierExportState());
-    }
-
-    if (error && error.includes("already exists")) {
-      Swal.fire({
-        icon: "error",
-        title: "Duplicate Quotation",
-        text: "Courier export already exists for this quotation!",
-      });
-      dispatch(resetCourierExportState());
-    }
-  }, [success, error, dispatch]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl ">
-      {/* 🔍 Search Quotation */}
-      <div className="relative mb-6" ref={dropdownRef}>
-        <label className="font-semibold mb-1 block text-gray-900">Search Quotation</label>
-        <div className="flex items-center">
-          <Search className="mr-2 text-gray-600" />
-          <input
-            className="border p-2 w-full rounded text-gray-600"
-            value={quotationNo}
-            onChange={(e) => setQuotationNo(e.target.value)}
-            placeholder="Type quotation number..."
-          />
-        </div>
-
-        {showDropdown && (
-          <ul className="absolute w-full bg-white border shadow z-50 max-h-60 overflow-auto">
-            {suggestions.map((s, i) => (
-              <li
-                key={i}
-                onClick={() => handleSelectSuggestion(s.quote_no)}
-                className="p-2 cursor-pointer hover:bg-gray-100"
-              >
-                <div className="font-semibold">{s.quote_no}</div>
-                <div className="text-xs text-gray-500">{s.subject}</div>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Create Export</h1>
+        <button className="px-4 py-2 bg-blue-700 text-white rounded">Back To Export List</button>
       </div>
 
-      {/* 📦 Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900">Courier Export Details</h2>
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          <p>{error}</p>
+          {existingExports?.length > 0 && (
+            <div className="mt-2">
+              <p>Existing exports linked to this quotation:</p>
+              <ul className="list-disc pl-5">
+                {existingExports.map((exp) => (
+                  <li key={exp.id}>{exp.awb_number} - {exp.quote_no}</li>
+                ))}
+              </ul>
+              <button
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
+                onClick={() => handleSubmit(true)}
+              >
+                Confirm to create another
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+      {success && (
+        <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
+          Courier export created successfully!
+          <button className="ml-2 text-blue-600 underline" onClick={handleReset}>
+            Create new
+          </button>
+        </div>
+      )}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+        className="space-y-6"
+      >
+        {/* Quotation & Booking */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Enter Quotation Number */}
+        <input
+          type="text"
+          name="quotation_no"
+          placeholder="Enter Quotation Number"
+          value={formData.quotation_no}
+          onChange={handleChange}
+          className="w-full p-2 rounded bg-gray-100 border"
+        />
+
+        {/* Hidden Quotation ID */}
+        <input type="hidden" name="quotation_id" value={formData.quotation_id} />
+
           <input
             type="date"
             name="booking_date"
+            placeholder="Booking Date"
             value={formData.booking_date}
             onChange={handleChange}
-            className="border p-3 rounded"
+            className="w-full p-2 rounded bg-gray-100 border border-gray-200"
           />
+        </div>
+
+        <input
+          type="text"
+          name="document_type"
+          placeholder="Select Document Type"
+          value={formData.document_type}
+          onChange={handleChange}
+          className="w-full p-2 rounded bg-gray-100 border border-gray-200"
+        />
+
+        {/* Shipper Details */}
+        <p className="font-semibold mt-4">Shipper Details :</p>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <input type="text" name="shipper_name" placeholder="Shipper Name" value={formData.shipper_name} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="text" name="shipper_mobile" placeholder="Shipper Mobile No." value={formData.shipper_mobile} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="email" name="shipper_email" placeholder="Shipper Email" value={formData.shipper_email} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+          <input type="text" name="shipper_address" placeholder="Shipper Address" value={formData.shipper_address} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+        </div>
+
+        {/* Consignee Details */}
+        <p className="font-semibold mt-4">Consignee Details :</p>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <input type="text" name="consignee_name" placeholder="Consignee Name" value={formData.consignee_name} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="text" name="consignee_mobile" placeholder="Consignee Mobile No." value={formData.consignee_mobile} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="email" name="consignee_email" placeholder="Consignee Email" value={formData.consignee_email} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+          <input type="text" name="consignee_address" placeholder="Consignee Address" value={formData.consignee_address} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+        </div>
+
+        {/* Delivery & Package */}
+        <div className="grid grid-cols-3 gap-4 mt-2">
+          <input type="text" name="place_of_delivery" placeholder="Place of Delivery" value={formData.place_of_delivery} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
           <select
-            name="document_type"
-            value={formData.document_type}
-            onChange={handleChange}
-            className="border p-3 rounded"
-          >
-            <option value="">Select Document Type</option>
-            <option value="document">Document</option>
-            <option value="non-document">Non-Document</option>
-          </select>
+  name="forwarding_company"
+  value={formData.forwarding_company}
+  onChange={handleChange}
+  className="p-2 rounded bg-gray-100 border border-gray-200"
+>
+  <option value="">Select Forwarding Company</option>
+  {agents.map((agent) => (
+    <option key={agent.id} value={agent.name}>
+      {agent.name}
+    </option>
+  ))}
+</select>
 
-          <input name="shipper_name" value={formData.shipper_name} onChange={handleChange} placeholder="Shipper Name" className="border p-3 rounded" />
-          <input name="shipper_email" value={formData.shipper_email} onChange={handleChange} placeholder="Shipper Email" className="border p-3 rounded" />
-          <input name="shipper_address" value={formData.shipper_address} onChange={handleChange} placeholder="Shipper Address" className="border p-3 rounded" />
-          <input name="shipper_mobile" value={formData.shipper_mobile} onChange={handleChange} placeholder="Shipper Mobile" className="border p-3 rounded" />
-
-          <input name="consignee_name" value={formData.consignee_name} onChange={handleChange} placeholder="Consignee Name" className="border p-3 rounded" />
-          <input name="consignee_email" value={formData.consignee_email} onChange={handleChange} placeholder="Consignee Email" className="border p-3 rounded" />
-          <input name="consignee_address" value={formData.consignee_address} onChange={handleChange} placeholder="Consignee Address" className="border p-3 rounded" />
-          <input name="consignee_mobile" value={formData.consignee_mobile} onChange={handleChange} placeholder="Consignee Mobile" className="border p-3 rounded" />
-
-          <input name="place_of_delivery" value={formData.place_of_delivery} onChange={handleChange} placeholder="Place of Delivery" className="border p-3 rounded" />
-          <input name="forwarding_company" value={formData.forwarding_company} onChange={handleChange} placeholder="Forwarding Company" className="border p-3 rounded" />
-          <input name="correspondence_number" value={formData.correspondence_number} onChange={handleChange} placeholder="Correspondence Number" className="border p-3 rounded" />
+          <input type="text" name="correspondence_number" placeholder="Correspondance No." value={formData.correspondence_number} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
         </div>
 
-        {/* package dims */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-gray-700">
-          <input name="length" value={formData.length} onChange={handleChange} placeholder="Length" className="border p-3 rounded" />
-          <input name="width" value={formData.width} onChange={handleChange} placeholder="Width" className="border p-3 rounded" />
-          <input name="height" value={formData.height} onChange={handleChange} placeholder="Height" className="border p-3 rounded" />
-          <input name="weight" value={formData.weight} onChange={handleChange} placeholder="Weight" className="border p-3 rounded" />
+        <div className="grid grid-cols-3 gap-4 mt-2">
+          <input type="number" name="length" placeholder="Length" value={formData.length} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="width" placeholder="Width" value={formData.width} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="height" placeholder="Height" value={formData.height} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="weight" placeholder="Weight" value={formData.weight} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="package_count" placeholder="Packages" value={formData.package_count} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="amount" placeholder="Amount" value={formData.amount} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-gray-700">
-          <input name="package_count" value={formData.package_count} onChange={handleChange} placeholder="Package Count" className="border p-3 rounded" />
-          <input name="amount" value={formData.amount} onChange={handleChange} placeholder="Amount" className="border p-3 rounded" />
-        </div>
+       {/* Items */}
 
-        <div className="border p-4 rounded">
-          <h3 className="font-semibold mb-3 text-gray-700">Items</h3>
 
-          {formData.items.map((item, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-gray-700">
-              <input name="item_name" value={item.item_name} placeholder="Name" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-              <input name="item_quantity" value={item.item_quantity} placeholder="Qty" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-              <input name="item_weight" value={item.item_weight} placeholder="Weight" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-              <input name="item_description" value={item.item_description} placeholder="Description" onChange={(e) => handleItemChange(i, e)} className="border p-3 rounded" />
-              {formData.items.length > 1 && (
-                <button type="button" className="text-red-600" onClick={() => removeItem(i)}>Remove</button>
-              )}
-            </div>
-          ))}
+{formData.items.length > 0 && formData.items.map((item, index) => (
+  <>
+  <p className="font-semibold mt-4">Items :</p>
+  <div key={index} className="grid grid-cols-5 gap-4 mb-2 items-center">
+  
+    <input
+      type="text"
+      name="item_name"
+      placeholder="Name"
+      value={item.item_name}
+      onChange={(e) => handleItemChange(index, e)}
+      className="p-2 rounded bg-gray-100 border border-gray-200"
+    />
+    <input
+      type="number"
+      name="item_quantity"
+      placeholder="Qty"
+      value={item.item_quantity}
+      onChange={(e) => handleItemChange(index, e)}
+      className="p-2 rounded bg-gray-100 border border-gray-200"
+    />
+    <input
+      type="number"
+      name="item_weight"
+      placeholder="Weight"
+      value={item.item_weight}
+      onChange={(e) => handleItemChange(index, e)}
+      className="p-2 rounded bg-gray-100 border border-gray-200"
+    />
+    <input
+      type="text"
+      name="item_description"
+      placeholder="Description"
+      value={item.item_description}
+      onChange={(e) => handleItemChange(index, e)}
+      className="p-2 rounded bg-gray-100 border border-gray-200"
+    />
 
-          <button type="button" onClick={addItem} className="primaryBg text-white px-3 py-2 rounded">
-            + Add Item
+    {/* Icons: Reset & Delete */}
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          const newItems = [...formData.items];
+          newItems[index] = { item_name: "", item_quantity: "", item_weight: "", item_description: "" };
+          setFormData({ ...formData, items: newItems });
+        }}
+        className="p-1 bg-yellow-400 rounded hover:bg-yellow-500"
+        title="Reset"
+      >
+        <RefreshCw className="w-5 h-5 text-white" />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => removeItem(index)}
+        className="p-1 bg-red-600 rounded hover:bg-red-700"
+        title="Delete"
+      >
+        <Trash2 className="w-5 h-5 text-white" />
+      </button>
+    </div>
+  </div>
+  </>
+))}
+
+        {/* Actions */}
+        <div className="flex gap-4 mt-4">
+          <button type="submit" disabled={loading} className="px-6 py-2 bg-blue-600 text-white rounded">
+            {loading ? "Creating..." : "Save Invoice"}
           </button>
+          <button type="button" onClick={handleReset} className="px-6 py-2 bg-gray-300 rounded">
+            Cancel Invoice
+          </button>
+          {/* Add Item Button */}
+<button
+  type="button"
+  onClick={addItem}
+  className="px-4 py-2 bg-blue-700 text-white rounded mt-2"
+>
+  Add Item
+</button>
         </div>
-
-        <button type="submit" disabled={exportLoading || quotationLoading} className="w-full primaryBg text-white py-3 rounded">
-          {exportLoading ? "Processing..." : "Create Export"}
-        </button>
       </form>
     </div>
   );
-}
+};
+
+export default CreateCourierExportPage;

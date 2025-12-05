@@ -125,6 +125,13 @@ const quotationSlice = createSlice({
       state.error = null;
       state.successMessage = null;
     },
+    resetQuotationState(state) {
+    state.quotations = [];
+    state.singleQuotation = null;
+    state.loading = false;
+    state.error = null;
+    state.successMessage = null;
+  },
   },
 
   extraReducers: (builder) => {
@@ -223,5 +230,5 @@ const quotationSlice = createSlice({
   },
 });
 
-export const { clearQuotationMessages } = quotationSlice.actions;
+export const { clearQuotationMessages, resetQuotationState  } = quotationSlice.actions;
 export default quotationSlice.reducer;

@@ -54,7 +54,7 @@ body {
   background-color: var(--colorPrimary);
 }
 
-.lightBg{
+.lightBg, input{
   background-color: var(--lightBackground);
 }
 
