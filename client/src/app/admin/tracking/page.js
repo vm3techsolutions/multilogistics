@@ -1,76 +1,3 @@
-// "use client";
-
-// import { useDispatch, useSelector } from "react-redux";
-// import { useState } from "react";
-// import { trackFedexShipment, resetTrackingState } from "@/store/slices/trackingSlice";
-
-// export default function TrackPage() {
-//   const dispatch = useDispatch();
-//   const { trackingDetails, loading, error } = useSelector((s) => s.tracking);
-
-//   const [trackingNumber, setTrackingNumber] = useState("");
-
-//   const handleTrack = () => {
-//     if (!trackingNumber) return alert("Enter tracking number");
-//     dispatch(trackFedexShipment(trackingNumber));
-//   };
-
-//   return (
-//     <div className="max-w-xl mx-auto mt-20 bg-white p-8 rounded-2xl shadow-lg">
-//       <h1 className="text-2xl font-bold text-center mb-6">FedEx Shipment Tracker</h1>
-
-//       <div className="flex gap-2">
-//         <input
-//           type="text"
-//           placeholder="Enter Tracking Number"
-//           value={trackingNumber}
-//           onChange={(e) => setTrackingNumber(e.target.value)}
-//           className="flex-1 border rounded-lg p-3"
-//         />
-
-//         <button
-//           onClick={handleTrack}
-//           className="bg-blue-600 text-white px-4 rounded-lg"
-//         >
-//           Track
-//         </button>
-//       </div>
-
-//       <button
-//         className="mt-3 text-gray-500 underline text-sm"
-//         onClick={() => dispatch(resetTrackingState())}
-//       >
-//         Clear
-//       </button>
-
-//       {loading && <p className="mt-4 text-blue-600">Fetching tracking info...</p>}
-
-//       {error && <p className="mt-4 text-red-600">{error}</p>}
-
-//       {trackingDetails && (
-//         <div className="mt-6 border p-4 rounded-lg bg-gray-50">
-//           <h2 className="font-semibold text-lg mb-2">Shipment Details</h2>
-
-//           <p><b>Status:</b> {trackingDetails.status}</p>
-//           <p><b>Last Update:</b> {trackingDetails.lastUpdate}</p>
-//           <p><b>Location:</b> {trackingDetails.location}</p>
-//           <p><b>Estimated Delivery:</b> {trackingDetails.estimatedDelivery}</p>
-
-//           <h3 className="font-semibold mt-4">Tracking Events:</h3>
-//           <ul className="list-disc ml-5">
-//             {trackingDetails.events?.map((ev, i) => (
-//               <li key={i} className="mt-1">
-//                 <b>{ev.date}</b> — {ev.description} ({ev.city}, {ev.country})
-//               </li>
-//             ))}
-//           </ul>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
 "use client";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -88,10 +15,15 @@ export default function TrackPage() {
     dispatch(trackFedexShipment(trackingNumber));
   };
 
+  // ⭐ Utility to safely show values even if they come as objects
+  const safe = (v) => {
+    if (!v) return "N/A";
+    if (typeof v === "string") return v;
+    return JSON.stringify(v);
+  };
+
   return (
     <div className="max-w-2xl mx-auto mt-20 p-6">
-      
-      {/* Glass Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,7 +33,6 @@ export default function TrackPage() {
           FedEx Shipment Tracker
         </h1>
 
-        {/* Input Section */}
         <div className="flex gap-3 mt-6">
           <input
             type="text"
@@ -127,29 +58,18 @@ export default function TrackPage() {
         </button>
       </motion.div>
 
-      {/* Loading */}
       {loading && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-5 text-purple-600 text-center"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-5 text-purple-600 text-center">
           Fetching tracking info...
         </motion.p>
       )}
 
-      {/* Error */}
       {error && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-5 text-red-600 text-center"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-5 text-red-600 text-center">
           {error}
         </motion.p>
       )}
 
-      {/* Tracking Card */}
       <AnimatePresence>
         {trackingDetails && (
           <motion.div
@@ -160,22 +80,21 @@ export default function TrackPage() {
           >
             <h2 className="text-xl font-semibold mb-3">Shipment Details</h2>
 
-            {/* Status Badge */}
             <span
               className={`inline-block px-3 py-1 text-sm rounded-full mb-3 
-              ${
-                trackingDetails.status === "Delivered"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}
+                ${
+                  safe(trackingDetails.status) === "Delivered"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
             >
-              {trackingDetails.status}
+              {safe(trackingDetails.status)}
             </span>
 
-            <p><b>Tracking No:</b> {trackingDetails.trackingNumber}</p>
-            <p><b>Last Update:</b> {trackingDetails.lastUpdate}</p>
-            <p><b>Location:</b> {trackingDetails.location}</p>
-            <p><b>Estimated Delivery:</b> {trackingDetails.estimatedDelivery}</p>
+            <p><b>Tracking No:</b> {safe(trackingDetails.trackingNumber)}</p>
+            <p><b>Last Update:</b> {safe(trackingDetails.lastUpdate)}</p>
+            <p><b>Location:</b> {safe(trackingDetails.location)}</p>
+            <p><b>Estimated Delivery:</b> {safe(trackingDetails.estimatedDelivery)}</p>
 
             {/* Timeline */}
             <h3 className="font-semibold mt-6 mb-2">Tracking Timeline</h3>
@@ -191,10 +110,10 @@ export default function TrackPage() {
                 >
                   <div className="absolute -left-3 top-1.5 w-3 h-3 bg-purple-600 rounded-full"></div>
 
-                  <p className="font-semibold text-purple-700">{ev.date}</p>
-                  <p className="text-gray-800">{ev.description}</p>
+                  <p className="font-semibold text-purple-700">{safe(ev.date)}</p>
+                  <p className="text-gray-800">{safe(ev.description)}</p>
                   <p className="text-gray-500 text-sm">
-                    {ev.city}, {ev.country}
+                    {safe(ev.city)}, {safe(ev.country)}
                   </p>
                 </motion.div>
               ))}
