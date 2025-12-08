@@ -25,7 +25,7 @@ const kycController = require('../customerController/kycController');
  */
 // ✅ Create Customer
 const createCustomer = async (req, res) => {
-  const { name, company_name, email, phone, address } = req.body;
+  const { name, company_name, email, email1, email2, email3, phone, phone1, address } = req.body;
 
    // Parse document types — it may come as stringified JSON or array
   let document_types = [];
@@ -52,13 +52,13 @@ const createCustomer = async (req, res) => {
     }
 
     const insertSql = `
-      INSERT INTO customers (name, company_name, email, phone, address, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      INSERT INTO customers (name, company_name, email, email1, email2, email3, phone, phone1, address, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
       RETURNING *
     `;
 
     const result = await db.query(insertSql, [
-      name, company_name, email, phone, address
+      name, company_name, email, email1 || null, email2 || null, email3 || null, phone, phone1 || null, address
     ]);
 
     // return res.status(201).json({
@@ -165,7 +165,7 @@ const getCustomerById = async (req, res) => {
 // ✅ Edit Customer
 const editCustomer = async (req, res) => {
   const { id } = req.params;
-  const { name, company_name, email, phone, address } = req.body;
+  const { name, company_name, email, email1, email2, email3, phone, phone1, address } = req.body;
 
   // Parse document types — handle JSON or array
   let document_types = [];
@@ -196,13 +196,17 @@ const editCustomer = async (req, res) => {
         name = COALESCE($1, name),
         company_name = COALESCE($2, company_name),
         email = COALESCE($3, email),
-        phone = COALESCE($4, phone),
-        address = COALESCE($5, address),
+        email1 = COALESCE($4, email1),
+        email2 = COALESCE($5, email2),
+        email3 = COALESCE($6, email3),
+        phone = COALESCE($7, phone),
+        phone1 = COALESCE($8, phone1),
+        address = COALESCE($9, address),
         updated_at = NOW()
-      WHERE id = $6
+      WHERE id = $10
       RETURNING *;
     `;
-    const result = await db.query(updateSql, [name, company_name, email, phone, address, id]);
+    const result = await db.query(updateSql, [name, company_name, email, email1, email2, email3, phone, phone1, address, id]);
 
     // kyc edit
     const updatedCustomer = result.rows[0];

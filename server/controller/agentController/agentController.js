@@ -6,16 +6,20 @@ const db = require('../../config/db');
  *
  * Expects:
  * - name: string (required)
- * - email: string (required)
+ * - email: string (required, primary email)
+ * - email1: string (optional, secondary email)
+ * - email2: string (optional, tertiary email)
+ * - email3: string (optional, quaternary email)
  * - contact_person_name: string (required)
- * - phone: string (required)
+ * - phone: string (required, primary phone)
+ * - phone1: string (optional, secondary phone)
  * - country: string (required)
  * - type: string ('import' or 'export', required)
  *
  * Requires authenticated user info in req.user.id (from JWT middleware).
  */
 const createAgent = async (req, res) => {
-  const { name, email, contact_person_name, phone, country, type } = req.body;
+  const { name, email, email1, email2, email3, contact_person_name, phone, phone1, country, type } = req.body;
   const createdBy = req.user.id; // From JWT middleware
 
   if (!name || !email || !contact_person_name || !phone || !country || !type) {
@@ -23,7 +27,7 @@ const createAgent = async (req, res) => {
   }
 
   console.log(
-    `Creating agent: ${name}, Email: ${email}, Type: ${type}, Created By: ${createdBy}, Phone: ${phone}, Country: ${country}`
+    `Creating agent: ${name}, Email: ${email}, Email1: ${email1}, Email2: ${email2}, Email3: ${email3}, Type: ${type}, Created By: ${createdBy}, Phone: ${phone}, Phone1: ${phone1}, Country: ${country}`
   );
 
   const validTypes = ['import', 'export'];
@@ -41,16 +45,20 @@ const createAgent = async (req, res) => {
     }
 
     const insertSql = `
-      INSERT INTO agents (name, email, contact_person_name, phone, country, type, created_by, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      INSERT INTO agents (name, email, email1, email2, email3, contact_person_name, phone, phone1, country, type, created_by, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
       RETURNING *
     `;
 
     const result = await db.query(insertSql, [
       name,
       email,
+      email1 || null,
+      email2 || null,
+      email3 || null,
       contact_person_name,
       phone,
+      phone1 || null,
       country,
       type,
       createdBy,
@@ -70,7 +78,7 @@ const createAgent = async (req, res) => {
 const editAgent = async (req, res) => {
  
   const { id } = req.params;
-  const { name, email, contact_person_name, phone, country, type } = req.body;
+  const { name, email, email1, email2, email3, contact_person_name, phone, phone1, country, type } = req.body;
   if (!id) {
     return res.status(400).json({ message: 'Agent ID is required' });
   }
@@ -81,24 +89,32 @@ const editAgent = async (req, res) => {
     if (existing.rows.length === 0) {
       return res.status(404).json({ message: 'Agent not found' });
     }
-    // Update agent
+    // Update agent with new email and phone columns
     const updateSql = `
       UPDATE agents SET
         name = COALESCE($1, name),
         email = COALESCE($2, email),
-        contact_person_name = COALESCE($3, contact_person_name),
-        phone = COALESCE($4, phone),
-        country = COALESCE($5, country),
-        type = COALESCE($6, type),
+        email1 = COALESCE($3, email1),
+        email2 = COALESCE($4, email2),
+        email3 = COALESCE($5, email3),
+        contact_person_name = COALESCE($6, contact_person_name),
+        phone = COALESCE($7, phone),
+        phone1 = COALESCE($8, phone1),
+        country = COALESCE($9, country),
+        type = COALESCE($10, type),
         updated_at = NOW()
-      WHERE id = $7
+      WHERE id = $11
       RETURNING *
     `;
     const result = await db.query(updateSql, [
       name,
       email,
+      email1,
+      email2,
+      email3,
       contact_person_name,
       phone,
+      phone1,
       country,
       type,
       id,
