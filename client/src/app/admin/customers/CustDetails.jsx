@@ -298,7 +298,7 @@ export default function CustDetails() {
                           ) : (
                             <div
                               onClick={() =>
-                                window.open(doc.document_url, "_blank")
+                                window.open(doc.signed_url, "_blank")
                               }
                               className="flex flex-col items-center justify-center h-40 bg-gray-100 cursor-pointer"
                             >
