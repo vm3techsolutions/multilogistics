@@ -6,7 +6,7 @@ const verifyToken = require('../middleware/auth');
 const adminController = require('../controller/adminController/adminController');
 const agentController = require('../controller/agentController/agentController');
 const { createCustomer, getCustomers, getCustomerById, editCustomer, updateCustomerStatus  } = require('../controller/customerController/customerController');
-const { createCourierExport, getAllCourierExports, getCourierExportById } = require('../controller/courierExportController/courierExportController');
+const { createCourierExport, getAllCourierExports, getCourierExportById, updateCourierExport } = require('../controller/courierExportController/courierExportController');
 //const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuoteNo, updateQuotation } = require('../controller/quotationController/quotationController');
 const quotationStatusController = require('../controller/quotationController/approveQuotation');
@@ -54,6 +54,7 @@ router.post('/quotation/send-email/:id', verifyToken, quotationStatusController.
 
 // Courier Exports Route
 router.post('/courier-exports', verifyToken, createCourierExport);
+router.put('/courier-exports/:id', verifyToken, updateCourierExport);
 router.get('/courier-exports/stats',verifyToken, getCourierStats);
 router.get("/recent-shipments", getRecentShipmentsController);
 router.get('/courier-exports-all', verifyToken, getAllCourierExports);

@@ -279,8 +279,90 @@ const getCourierExportById = async (req, res) => {
   }
 };
 
+// Update courier export (partial or full). If `items` array provided, existing items will be replaced.
+const updateCourierExport = async (req, res) => {
+  const { id } = req.params;
+  const client = await db.connect();
+
+  const sanitizeNumber = (value) => {
+    if (value === '' || value === null || value === undefined) return null;
+    return isNaN(value) ? null : Number(value);
+  };
+
+  try {
+    const exportId = sanitizeNumber(id);
+    if (!exportId) return res.status(400).json({ message: 'Invalid courier export id' });
+
+    const updatableFields = [
+      'quotation_id','quote_no','awb_number','booking_date','document_type',
+      'shipper_name','shipper_email','shipper_address','shipper_mobile',
+      'consignee_name','consignee_email','consignee_address','consignee_mobile',
+      'place_of_delivery','forwarding_company','correspondence_number',
+      'length','width','height','weight','package_count','amount'
+    ];
+
+    const body = req.body || {};
+    const setParts = [];
+    const values = [];
+    let idx = 1;
+    for (const f of updatableFields) {
+      if (Object.prototype.hasOwnProperty.call(body, f)) {
+        setParts.push(`${f} = $${idx}`);
+        // sanitize numeric-looking fields
+        if (['length','width','height','weight','package_count','amount','quotation_id'].includes(f)) {
+          values.push(sanitizeNumber(body[f]));
+        } else {
+          values.push(body[f]);
+        }
+        idx++;
+      }
+    }
+
+    // Begin transaction
+    await client.query('BEGIN');
+
+    if (setParts.length > 0) {
+      const updateSql = `UPDATE courier_exports SET ${setParts.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`;
+      values.push(exportId);
+      const { rows } = await client.query(updateSql, values);
+      if (rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Courier export not found' });
+      }
+    }
+
+    // If items provided, replace them (delete then insert)
+    if (Array.isArray(body.items)) {
+      await client.query(`DELETE FROM courier_export_items WHERE courier_export_id = $1`, [exportId]);
+      const itemSql = `INSERT INTO courier_export_items (courier_export_id, item_name, item_quantity, item_weight, item_description) VALUES ($1,$2,$3,$4,$5)`;
+      for (const item of body.items) {
+        if (!item.item_name || item.item_quantity == null || item.item_weight == null) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ message: 'Invalid item data' });
+        }
+        await client.query(itemSql, [exportId, item.item_name, sanitizeNumber(item.item_quantity), sanitizeNumber(item.item_weight), item.item_description || null]);
+      }
+    }
+
+    await client.query('COMMIT');
+
+    // Return updated export with items
+    const exportResult = await client.query(`SELECT ce.*, json_agg(cei) AS items FROM courier_exports ce LEFT JOIN courier_export_items cei ON ce.id = cei.courier_export_id WHERE ce.id = $1 GROUP BY ce.id`, [exportId]);
+    const updatedExport = exportResult.rows[0];
+    res.status(200).json({ message: 'Courier export updated', courier_export: updatedExport });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Update Courier Export Error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   createCourierExport,
   getAllCourierExports,
-  getCourierExportById
+  getCourierExportById,
+  updateCourierExport
 };
+
