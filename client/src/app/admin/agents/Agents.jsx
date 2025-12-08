@@ -33,6 +33,10 @@ export default function Agents() {
       (agent.contact_person_name &&
         agent.contact_person_name
           .toLowerCase()
+          .includes(searchId.toLowerCase())) ||
+          (agent.country &&
+        agent.country
+          .toLowerCase()
           .includes(searchId.toLowerCase()));
 
     const matchesType =
@@ -70,7 +74,7 @@ export default function Agents() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by Name"
+            placeholder="Search by Agency/Person/Country"
             value={searchId}
             onChange={(e) => {
               setSearchId(e.target.value);
@@ -126,7 +130,7 @@ export default function Agents() {
                     </th>
                     <th className="p-3 border border-gray-200">Email</th>
                     <th className="p-3 border border-gray-200">Phone</th>
-                    <th className="p-3 border border-gray-200">Address</th>
+                    <th className="p-3 border border-gray-200">Country</th>
                     <th className="p-3 border border-gray-200">Type</th>
                     <th className="p-3 border border-gray-200 text-center">Status</th>
                     <th className="p-3 border border-gray-200 text-center">
@@ -145,8 +149,12 @@ export default function Agents() {
                       <td className="p-3 border border-gray-200">
                         {agent.contact_person_name}
                       </td>
-                      <td className="p-3 border border-gray-200">{agent.email}</td>
-                      <td className="p-3 border border-gray-200">{agent.phone}</td>
+                      <td className="p-3 border border-gray-200">{[agent.email, agent.email1, agent.email2, agent.email3]
+    .filter(e => e && e.trim() !== "")
+    .join(", ")}</td>
+                      <td className="p-3 border border-gray-200">{[agent.phone, agent.phone1]
+    .filter(p => p && p.trim() !== "")
+    .join(", ")}</td>
                       <td className="p-3 border border-gray-200">{agent.country}</td>
                       <td className="p-3 border border-gray-200">{agent.type}</td>
                       {/* ✅ Status Column */}

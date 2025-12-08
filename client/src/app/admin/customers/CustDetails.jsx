@@ -94,10 +94,13 @@ export default function CustDetails() {
   // ✅ Filter & sort customers
   const filteredCustomers = customers
     .filter((cust) => {
+      const search = searchId.trim().toLowerCase();
+
       const matchesSearch =
-        searchId === "" ||
-        cust.id.toString().includes(searchId.trim()) ||
-        cust.name.toLowerCase().includes(searchId.toLowerCase());
+        search === "" ||
+        cust.id.toString().includes(search) ||
+        cust.name.toLowerCase().includes(search) ||
+        cust.address?.toLowerCase().includes(search);
 
         const matchesStatus =
       statusFilter === "all" ||
@@ -125,7 +128,7 @@ export default function CustDetails() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search by ID or Name"
+            placeholder="Search by ID/Name/Address"
             value={searchId}
             onChange={(e) => {
               setSearchId(e.target.value);
@@ -215,8 +218,12 @@ export default function CustDetails() {
                       <td className="p-3 border border-gray-200">
                         {cust.company_name}
                       </td>
-                      <td className="p-3 border border-gray-200">{cust.email}</td>
-                      <td className="p-3 border border-gray-200">{cust.phone}</td>
+                      <td className="p-3 border border-gray-200">{[cust.email, cust.email1, cust.email2, cust.email3]
+    .filter(e => e && e.trim() !== "")
+    .join(", ")}</td>
+                      <td className="p-3 border border-gray-200">{[cust.phone, cust.phone1]
+    .filter(p => p && p.trim() !== "")
+    .join(", ")}</td>
                       <td className="p-3 border border-gray-200">{cust.address}</td>
 
                       {/* ✅ Documents */}

@@ -47,40 +47,40 @@ const QuotationView = ({ quotationData }) => {
     window.location.reload();
   };
 
- const downloadPDF = async () => {
-  const element = pdfRef.current;
+  const downloadPDF = async () => {
+    const element = pdfRef.current;
 
-  const canvas = await html2canvas(element, {
-    scale: 1.8,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    windowWidth: element.scrollWidth,
-    windowHeight: element.scrollHeight,
-    scrollY: -window.scrollY,
-  });
+    const canvas = await html2canvas(element, {
+      scale: 1.8,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      scrollY: -window.scrollY,
+    });
 
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "mm", "a4");
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // Auto-scale image to fit page height in SINGLE PAGE
-  let imgWidth = pageWidth;
-  let imgHeight = (canvas.height * pageWidth) / canvas.width;
+    // Auto-scale image to fit page height in SINGLE PAGE
+    let imgWidth = pageWidth;
+    let imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-  if (imgHeight > pageHeight) {
-    imgHeight = pageHeight;
-    imgWidth = (canvas.width * pageHeight) / canvas.height;
-  }
+    if (imgHeight > pageHeight) {
+      imgHeight = pageHeight;
+      imgWidth = (canvas.width * pageHeight) / canvas.height;
+    }
 
-  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-  pdf.save(`quotation-${q.quote_no}.pdf`);
-};
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    pdf.save(`quotation-${q.quote_no}.pdf`);
+  };
 
 
   // Include freight + FSC
-  const freight = Number(q.total_freight_amount) || 0; 
+  const freight = Number(q.total_freight_amount) || 0;
   // Include freight + FSC + destination
   const finalTotal = Number(q.total) || 0;
   //  calculate gst on finalTotal
@@ -93,8 +93,8 @@ const QuotationView = ({ quotationData }) => {
   };
 
   useEffect(() => {
-  const style = document.createElement("style");
-  style.innerHTML = `
+    const style = document.createElement("style");
+    style.innerHTML = `
     @media print {
       thead th {
         background: #1C5070 !important;
@@ -104,13 +104,13 @@ const QuotationView = ({ quotationData }) => {
       }
     }
   `;
-  document.head.appendChild(style);
-}, []);
+    document.head.appendChild(style);
+  }, []);
 
-const globalSmallText = {
-  fontSize: "11px",
-  lineHeight: "1.3",
-};
+  const globalSmallText = {
+    fontSize: "11px",
+    lineHeight: "1.3",
+  };
 
   return (
     <div className="w-full flex justify-center pb-10">
@@ -181,7 +181,7 @@ const globalSmallText = {
         </div>
 
         {/* PDF WRAPPER */}
-        <div ref={pdfRef} style={{ paddingLeft: "24px", paddingRight: "24px", paddingTop: "12px", paddingBottom: "12px",  width: "750px", margin: "0 auto", fontSize: "11px", ...globalSmallText }}>
+        <div ref={pdfRef} style={{ paddingLeft: "24px", paddingRight: "24px", paddingTop: "12px", paddingBottom: "12px", width: "750px", margin: "0 auto", fontSize: "11px", ...globalSmallText }}>
 
 
           {/* HEADER */}
@@ -290,33 +290,33 @@ const globalSmallText = {
 
               <tbody>
                 {[...courierCharge, ...otherFreightCharges].map((c, i) => {
-  const total = calcFreightTotal(c);
+                  const total = calcFreightTotal(c);
 
-  const isFsc = c?.charge_name?.toLowerCase() === "fsc";
+                  const isFsc = c?.charge_name?.toLowerCase() === "fsc";
 
-  return (
-    <tr key={i}>
-      {/* Charge Name */}
-      <td style={td}>{c.charge_name}</td>
+                  return (
+                    <tr key={i}>
+                      {/* Charge Name */}
+                      <td style={td}>{isFsc ? "FSC (%)" : c.charge_name}</td>
 
-      {/* Rate Per KG */}
-      <td style={{ ...td, textAlign: "center" }}>{c.rate_per_kg}</td>
+                      {/* Rate Per KG */}
+                      <td style={{ ...td, textAlign: "center" }}>{c.rate_per_kg}</td>
 
-      {/* Weight – blank when FSC */}
-      <td style={{ ...td, textAlign: "center" }}>
-        {isFsc ? "" : c.weight_kg}
-      </td>
+                      {/* Weight – blank when FSC */}
+                      <td style={{ ...td, textAlign: "center" }}>
+                        {isFsc ? "" : c.weight_kg}
+                      </td>
 
-      {/* Amount */}
-      <td style={{ ...td, textAlign: "right" }}>{c.amount}</td>
+                      {/* Amount */}
+                      <td style={{ ...td, textAlign: "right" }}>{Number(c.amount).toFixed(2)}</td>
 
-      {/* Total – show total_freight_amount for FSC */}
-      <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>
-        {isFsc ? q.total_freight_amount : total}
-      </td>
-    </tr>
-  );
-})}
+                      {/* Total – show total_freight_amount for FSC */}
+                      <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>
+                        {Number(isFsc ? q.total_freight_amount : total).toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
 
 
                 <tr style={{ background: "#f3f4f6" }}>
@@ -342,36 +342,42 @@ const globalSmallText = {
                 <tr>
                   <th style={thHeader}>Charge Name</th>
                   <th style={{ ...thHeader, textAlign: "right" }}>Amount</th>
-                  <th style={{ ...thHeader, textAlign: "right" }}>Total</th>
+                  {/* <th style={{ ...thHeader, textAlign: "right" }}>Total</th> */}
                 </tr>
               </thead>
 
               <tbody>
-                {destinationCharges.map((c, i) => {
-                  const destSumTillRow = destinationCharges
-                    .slice(0, i + 1)
-                    .reduce((sum, item) => sum + Number(item.amount), 0);
+  {destinationCharges.map((c, i) => {
+    // Sum of amounts up to current row
+    const destSumTillRow = destinationCharges
+      .slice(0, i + 1)
+      .reduce((sum, item) => sum + Number(item.amount), 0);
 
-                  const baseAmount = Number(q.total_freight_amount);
-                  const rowTotal = baseAmount + destSumTillRow;
+    return (
+      <tr key={i}>
+        <td style={td}>{c.charge_name}</td>
+        <td style={{ ...td, textAlign: "right" }}>{Number(c.amount).toFixed(2)}</td>
 
-                  return (
-                    <tr key={i}>
-                      <td style={td}>{c.charge_name}</td>
-                      <td style={{ ...td, textAlign: "right" }}>{c.amount}</td>
-                      <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>{rowTotal}</td>
-                    </tr>
-                  );
-                })}
+        {/* Row total = sum of amounts till this row */}
+        {/* <td style={{ ...td, textAlign: "right", fontWeight: "600" }}>
+          {destSumTillRow}
+        </td> */}
+      </tr>
+    );
+  })}
 
-                <tr style={{ background: "#f3f4f6" }}>
-                  <td style={{ ...td, fontWeight: "600" }}>Final Total</td>
-                  <td colSpan="2" style={{ ...td, textAlign: "right", fontWeight: "700" }}>
-                    {Number(q.total_freight_amount) +
-                      destinationCharges.reduce((sum, item) => sum + Number(item.amount), 0)}
-                  </td>
-                </tr>
-              </tbody>
+  {/* Destination final total */}
+  <tr style={{ background: "#f3f4f6" }}>
+    <td style={{ ...td, fontWeight: "600" }}>Destination Total</td>
+    <td colSpan="4" style={{ ...td, textAlign: "right", fontWeight: "700" }}>
+      {Number(destinationCharges.reduce(
+        (sum, item) => sum + Number(item.amount),
+        0
+      )).toFixed(2)}
+    </td>
+  </tr>
+</tbody>
+
             </table>
           </div>
 
@@ -379,6 +385,12 @@ const globalSmallText = {
           <div style={{ marginTop: "10px" }}>
             <table style={tableStyle}>
               <tbody>
+                <tr>
+                  <td style={{ ...td, fontWeight: "600" }}>Final Total</td>
+                  <td style={{ ...td, textAlign: "right" }}>{(Number(q.total_freight_amount) +
+                      destinationCharges.reduce((sum, item) => sum + Number(item.amount), 0)).toFixed(2)}</td>
+                </tr>
+
                 <tr>
                   <td style={{ ...td, fontWeight: "600" }}>GST (18%)</td>
                   <td style={{ ...td, textAlign: "right" }}>{gst.toFixed(2)}</td>

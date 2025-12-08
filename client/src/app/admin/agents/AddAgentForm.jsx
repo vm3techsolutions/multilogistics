@@ -10,8 +10,12 @@ const AddAgentForm = ({ onClose, editData }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    email1: "",
+  email2: "",
+  email3: "",
     contact_person_name: "",
     phone: "",
+    phone1: "",
     country: "",
     type: "import",
   });
@@ -24,9 +28,13 @@ const AddAgentForm = ({ onClose, editData }) => {
     if (editData) {
       setFormData({
         name: editData.name || "",
-        email: editData.email || "",
+        email: editData.email || "",        
+      email1: editData.email1 || "",
+      email2: editData.email2 || "",
+      email3: editData.email3 || "",
         contact_person_name: editData.contact_person_name || "",
         phone: editData.phone || "",
+        phone1: editData.phone1 || "",
         country: editData.country || "",
         type: editData.type || "import",
       });
@@ -47,18 +55,28 @@ const AddAgentForm = ({ onClose, editData }) => {
     else if (!/^[A-Za-z\s]+$/.test(formData.name))
       tempErrors.push("Agent name must contain only letters.");
 
-    if (!formData.email.trim()) tempErrors.push("Email is required.");
-    else if (!/\S+@\S+\.\S+/.test(formData.email))
-      tempErrors.push("Invalid email format.");
+    
 
     if (!formData.contact_person_name.trim())
       tempErrors.push("Contact person name is required.");
     else if (!/^[A-Za-z\s]+$/.test(formData.contact_person_name))
       tempErrors.push("Contact person name must contain only letters.");
 
-    if (!formData.phone.trim()) tempErrors.push("Phone number is required.");
-    else if (!/^[0-9]{10,15}$/.test(formData.phone))
-      tempErrors.push("Phone number must be 10–15 digits.");
+    // Validate all emails
+["email", "email1", "email2", "email3"].forEach((field) => {
+  if (formData[field] && !/\S+@\S+\.\S+/.test(formData[field])) {
+    tempErrors.push(`Invalid format in ${field}.`);
+  }
+});
+
+// Validate main phone (phone)
+if (formData.phone.trim() && !/^[0-9]{10,15}$/.test(formData.phone))
+  tempErrors.push("Phone number must be 10–15 digits.");
+
+// Validate alternate phone (phone1)
+if (formData.phone1.trim() && !/^[0-9]{10,15}$/.test(formData.phone1))
+  tempErrors.push("Alternate phone must be 10–15 digits.");
+
 
     if (!formData.country.trim()) tempErrors.push("Country is required.");
 
@@ -129,6 +147,34 @@ const AddAgentForm = ({ onClose, editData }) => {
         />
 
         <input
+  type="email"
+  name="email1"
+  placeholder="Alternate Email 1"
+  value={formData.email1}
+  onChange={handleChange}
+  className="w-full p-2 border rounded bg-[#F7FCFE]"
+/>
+
+<input
+  type="email"
+  name="email2"
+  placeholder="Alternate Email 2"
+  value={formData.email2}
+  onChange={handleChange}
+  className="w-full p-2 border rounded bg-[#F7FCFE]"
+/>
+
+<input
+  type="email"
+  name="email3"
+  placeholder="Alternate Email 3"
+  value={formData.email3}
+  onChange={handleChange}
+  className="w-full p-2 border rounded bg-[#F7FCFE]"
+/>
+
+
+        <input
           type="text"
           name="contact_person_name"
           placeholder="Contact Person Name"
@@ -138,13 +184,23 @@ const AddAgentForm = ({ onClose, editData }) => {
         />
 
         <input
-          type="text"
+          type="tel"
           name="phone"
           placeholder="Phone Number"
           value={formData.phone}
           onChange={handleChange}
           className="w-full p-2 border rounded bg-[#F7FCFE]"
         />
+
+        <input
+  type="text"
+  name="phone1"
+  placeholder="Alternate Phone Number"
+  value={formData.phone1}
+  onChange={handleChange}
+  className="w-full p-2 border rounded bg-[#F7FCFE]"
+/>
+
 
         <input
           type="text"

@@ -8,12 +8,16 @@ export default function AddCustomerForm({ onClose, editData }) {
   const { loading, error } = useSelector((state) => state.customers);
 
   const [newCustomer, setNewCustomer] = useState({
-    name: "",
-    company_name: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
+  name: "",
+  company_name: "",
+  email: "",
+  email1: "",
+  email2: "",
+  email3: "",
+  phone: "",
+  phone1: "",
+  address: "",
+});
 
   const [documents, setDocuments] = useState([{ type: "", file: null }]);
   const [errors, setErrors] = useState([]);
@@ -26,7 +30,11 @@ export default function AddCustomerForm({ onClose, editData }) {
         name: editData.name || "",
         company_name: editData.company_name || "",
         email: editData.email || "",
+        email1: editData.email1 || "",
+      email2: editData.email2 || "",
+      email3: editData.email3 || "",
         phone: editData.phone || "",
+        phone1: editData.phone1 || "",
         address: editData.address || "",
       });
 
@@ -74,7 +82,11 @@ export default function AddCustomerForm({ onClose, editData }) {
     formData.append("name", newCustomer.name);
     formData.append("company_name", newCustomer.company_name);
     formData.append("email", newCustomer.email);
+    formData.append("email1", newCustomer.email1);
+formData.append("email2", newCustomer.email2);
+formData.append("email3", newCustomer.email3);
     formData.append("phone", newCustomer.phone);
+    formData.append("phone1", newCustomer.phone1);
     formData.append("address", newCustomer.address);
 
     documents.forEach((doc) => {
@@ -149,12 +161,43 @@ export default function AddCustomerForm({ onClose, editData }) {
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
         <input
-          type="text"
+  type="email"
+  placeholder="Alternate Email 1"
+  value={newCustomer.email1}
+  onChange={(e) => setNewCustomer({ ...newCustomer, email1: e.target.value })}
+  className="border p-2 rounded w-full bg-[#F7FCFE]"
+/>
+
+<input
+  type="email"
+  placeholder="Alternate Email 2"
+  value={newCustomer.email2}
+  onChange={(e) => setNewCustomer({ ...newCustomer, email2: e.target.value })}
+  className="border p-2 rounded w-full bg-[#F7FCFE]"
+/>
+
+<input
+  type="email"
+  placeholder="Alternate Email 3"
+  value={newCustomer.email3}
+  onChange={(e) => setNewCustomer({ ...newCustomer, email3: e.target.value })}
+  className="border p-2 rounded w-full bg-[#F7FCFE]"
+/>
+
+        <input
+          type="tel"
           placeholder="Phone"
           value={newCustomer.phone}
           onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
           className="border p-2 rounded w-full bg-[#F7FCFE]"
         />
+        <input
+  type="tel"
+  placeholder="Alternate Phone"
+  value={newCustomer.phone1}
+  onChange={(e) => setNewCustomer({ ...newCustomer, phone1: e.target.value })}
+  className="border p-2 rounded w-full bg-[#F7FCFE]"
+/>
         <input
           type="text"
           placeholder="Address"
