@@ -148,8 +148,10 @@ const triggerQuotationEmail = async (req, res) => {
 
     // Fetch quotation with packages and charges
     const { rows } = await client.query(
-      `SELECT q.id, q.quote_no, q.subject, q.origin, q.destination, q.actual_weight, q.status, q.total, q.final_total,
-              c.email AS customer_email, a.email AS agent_email
+      `SELECT q.id, q.quote_no, q.subject, q.origin, q.destination, q.actual_weight, q.status, 
+              q.total, q.final_total, q.total_freight_amount,
+              c.id AS customer_id, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone, c.address,
+              a.id AS agent_id, a.name AS agent_name, a.email AS agent_email
        FROM courier_export_quotations q
        LEFT JOIN customers c ON q.customer_id = c.id
        LEFT JOIN agents a ON q.agent_id = a.id
@@ -162,6 +164,7 @@ const triggerQuotationEmail = async (req, res) => {
     const quotation = rows[0];
     // normalize total fields for email
     quotation.total = quotation.total || null;
+    quotation.total_freight_amount = quotation.total_freight_amount || null;
     // prefer camelCase finalTotal for email template
     quotation.finalTotal = quotation.final_total || quotation.finalTotal || null;
 
@@ -184,7 +187,7 @@ const triggerQuotationEmail = async (req, res) => {
 
     // Fetch charges
     const { rows: charges } = await client.query(
-      `SELECT charge_name, type, amount, description
+      `SELECT charge_name, type, amount, description, rate_per_kg, weight_kg
        FROM courier_export_quotation_charges
        WHERE quotation_id=$1`,
       [quotationId]
@@ -192,7 +195,8 @@ const triggerQuotationEmail = async (req, res) => {
     quotation.charges = charges;
 
     // Send email asynchronously
-    await sendQuotationMail(quotation.customer_email, quotation.agent_email, quotation);
+    // await sendQuotationMail(quotation.customer_email, quotation.agent_email, quotation);
+    await sendQuotationMail(quotation.customer_email, quotation);
 
     await client.query(
       `UPDATE courier_export_quotations 
