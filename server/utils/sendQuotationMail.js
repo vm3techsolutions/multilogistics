@@ -81,19 +81,24 @@ const sendQuotationMail = async (customerEmail, quotation) => {
   <h2 style="text-align:center; color:#003366; margin-top:20px;">Courier Export Quotation</h2>
   <p style="text-align:center; color:#444;">Your quotation is ready. Please review and approve.</p>
 
+<!-- HEADER (Gmail Safe) -->
+<table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #e5e7eb; margin-bottom:10px;">
+  <tr>
+    <td width="40%" style="padding:10px;">
+      <img src="cid:mllogo" alt="Logo" style="height:80px; display:block;" />
+    </td>
 
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px;">
-  <img src="cid:mllogo" alt="Logo" style="height:80px;" />
-
-  <div style="text-align:right; font-size:14px;  color:#333;">
+    <td width="60%" style="text-align:right; font-size:14px; color:#333; padding:10px;">
       <p><strong>Quotation No:</strong> ${quotation.quote_no}</p>
       <p><strong>Date:</strong> ${new Date().toLocaleDateString("en-GB")}</p>
       <p><strong>Email:</strong> info@multilogistics.co.in</p>
       <p><strong>Phone:</strong> +91 8411007077</p>
-    </div>
-  </div>
+    </td>
+  </tr>
+</table>
 
-  
+
+
   <!-- CUSTOMER + SHIPMENT DETAILS -->
   <div style="display:flex; gap:15px; margin-top:20px;">
 
