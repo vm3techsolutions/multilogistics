@@ -29,14 +29,26 @@ const createCourierExport = async (req, res) => {
     weight,
     package_count,
     amount,
+    export_type,       // NEW
+    customer_id,      // NEW
     items // Array of { item_name, item_quantity, item_weight, item_description }
   } = req.body;
 
   const createdBy = req.user.id;
 
-  // Validation (awb_number removed from required fields)
+  // Validate export_type
+  if (export_type && !['corporate', 'individual'].includes(export_type)) {
+    return res.status(400).json({ message: 'Invalid export_type - must be "corporate" or "individual"' });
+  }
+
+  // Validate customer_id if provided
+  if (customer_id && (isNaN(customer_id) || customer_id <= 0)) {
+    return res.status(400).json({ message: 'Invalid customer_id - must be a positive number' });
+  }
+
+  // Validation
   if (
-    !booking_date || !document_type ||
+    !booking_date || !document_type || !export_type || !customer_id ||
     !shipper_name || !shipper_email || !shipper_address || !shipper_mobile ||
     !consignee_name || !consignee_email || !consignee_address || !consignee_mobile ||
     length == null || width == null || height == null || weight == null ||
@@ -116,7 +128,7 @@ const createCourierExport = async (req, res) => {
       finalQuoteNo = quoteResult.rows[0].quote_no;
     }
 
-    // Insert courier export
+    // INSERT EXPORT (including customer_id + export_type)
     const insertExportSql = `
       INSERT INTO courier_exports (
         quotation_id, quote_no, awb_number, booking_date, document_type,
@@ -124,6 +136,7 @@ const createCourierExport = async (req, res) => {
         consignee_name, consignee_email, consignee_address, consignee_mobile,
         place_of_delivery, forwarding_company, correspondence_number,
         length, width, height, weight, package_count, amount,
+        customer_id, export_type,
         created_by, created_at, updated_at
       )
       VALUES (
@@ -132,7 +145,8 @@ const createCourierExport = async (req, res) => {
         $10, $11, $12, $13,
         $14, $15, $16,
         $17, $18, $19, $20, $21, $22,
-        $23, NOW(), NOW()
+        $23, $24,
+        $25, NOW(), NOW()
       )
       RETURNING *;
     `;
@@ -160,6 +174,8 @@ const createCourierExport = async (req, res) => {
       weight,
       package_count,
       amount,
+      customer_id || null,                      // NEW
+      export_type || 'corporate',               // NEW
       createdBy
     ]);
 
@@ -169,20 +185,23 @@ const createCourierExport = async (req, res) => {
     if (Array.isArray(items) && items.length > 0) {
       const itemSql = `
         INSERT INTO courier_export_items (
-          courier_export_id, item_name, item_quantity, item_weight, item_description
-        ) VALUES ($1, $2, $3, $4, $5)
+          courier_export_id, item_name, item_quantity, rate, amount, hsn_code
+        ) VALUES ($1, $2, $3, $4, $5, $6)
       `;
+
       for (const item of items) {
-        if (!item.item_name || item.item_quantity == null || item.item_weight == null) {
+        if (!item.item_name || item.item_quantity == null || item.rate == null || item.amount == null) {
           await client.query('ROLLBACK');
           return res.status(400).json({ message: 'Invalid item data' });
         }
+
         await client.query(itemSql, [
           courierExport.id,
           item.item_name,
           item.item_quantity,
-          item.item_weight,
-          item.item_description || null
+          item.rate,
+          item.amount,
+          item.hsn_code || null
         ]);
       }
     }
@@ -298,7 +317,9 @@ const updateCourierExport = async (req, res) => {
       'shipper_name','shipper_email','shipper_address','shipper_mobile',
       'consignee_name','consignee_email','consignee_address','consignee_mobile',
       'place_of_delivery','forwarding_company','correspondence_number',
-      'length','width','height','weight','package_count','amount'
+      'length','width','height','weight','package_count','amount',
+      'customer_id',          // NEW
+      'export_type'           // NEW
     ];
 
     const body = req.body || {};
@@ -307,9 +328,14 @@ const updateCourierExport = async (req, res) => {
     let idx = 1;
     for (const f of updatableFields) {
       if (Object.prototype.hasOwnProperty.call(body, f)) {
+
+        if (f === 'export_type' && !['corporate', 'individual'].includes(body[f])) {
+          return res.status(400).json({ message: 'Invalid export_type' });
+        }
+
         setParts.push(`${f} = $${idx}`);
         // sanitize numeric-looking fields
-        if (['length','width','height','weight','package_count','amount','quotation_id'].includes(f)) {
+        if (['length','width','height','weight','package_count','amount','quotation_id','customer_id'].includes(f)) {
           values.push(sanitizeNumber(body[f]));
         } else {
           values.push(body[f]);
@@ -322,8 +348,14 @@ const updateCourierExport = async (req, res) => {
     await client.query('BEGIN');
 
     if (setParts.length > 0) {
-      const updateSql = `UPDATE courier_exports SET ${setParts.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`;
+      const updateSql = `
+        UPDATE courier_exports 
+        SET ${setParts.join(', ')}, updated_at = NOW() 
+        WHERE id = $${idx} 
+        RETURNING *`;
+
       values.push(exportId);
+
       const { rows } = await client.query(updateSql, values);
       if (rows.length === 0) {
         await client.query('ROLLBACK');
@@ -334,13 +366,27 @@ const updateCourierExport = async (req, res) => {
     // If items provided, replace them (delete then insert)
     if (Array.isArray(body.items)) {
       await client.query(`DELETE FROM courier_export_items WHERE courier_export_id = $1`, [exportId]);
-      const itemSql = `INSERT INTO courier_export_items (courier_export_id, item_name, item_quantity, item_weight, item_description) VALUES ($1,$2,$3,$4,$5)`;
+
+      const itemSql = `
+        INSERT INTO courier_export_items (
+          courier_export_id, item_name, item_quantity, rate, amount, hsn_code
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+      `;
+
       for (const item of body.items) {
-        if (!item.item_name || item.item_quantity == null || item.item_weight == null) {
+        if (!item.item_name || item.item_quantity == null || item.rate == null || item.amount == null) {
           await client.query('ROLLBACK');
           return res.status(400).json({ message: 'Invalid item data' });
         }
-        await client.query(itemSql, [exportId, item.item_name, sanitizeNumber(item.item_quantity), sanitizeNumber(item.item_weight), item.item_description || null]);
+
+        await client.query(itemSql, [
+          exportId,
+          item.item_name,
+          item.item_quantity,
+          item.rate,
+          item.amount,
+          item.hsn_code || null
+        ]);
       }
     }
 
