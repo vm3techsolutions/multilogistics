@@ -26,4 +26,38 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = verifyToken;
+
+const isSales = (req, res, next) => {
+  
+  if (!req.user || req.user.role !== "sales") {
+    return res.status(403).json({ message: "Access denied. Sales role required." });
+  }
+  next();
+};
+
+const isAccount = (req, res, next) => {
+  
+  if (!req.user || req.user.role !== "account") {
+    return res.status(403).json({ message: "Access denied. Account role required." });
+  }
+  next();
+};
+
+const isOperation = (req, res, next) => {
+  
+  if (!req.user || req.user.role !== "operation") {
+    return res.status(403).json({ message: "Access denied. Operation role required." });
+  }
+  next();
+};
+
+const isSuperAdmin   = (req, res, next) => {
+
+  if (!req.user || req.user.role !== "superadmin") {
+    return res.status(403).json({ message: "Access denied. Superadmin role required." });
+  }
+  next();
+};
+
+
+module.exports = { verifyToken, isSales, isAccount, isOperation, isSuperAdmin };

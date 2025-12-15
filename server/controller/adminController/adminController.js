@@ -16,21 +16,33 @@ const jwt = require('jsonwebtoken');
  */
 
 const adminSignUp = async (req, res) => {
-  const { name, email, phone, password, role } = req.body;
+  const { name, email, phone, password, role_id } = req.body;
 
-  if (!name || !email || !phone || !password || !role) {
+  if (!name || !email || !phone || !password || !role_id) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  // Validate role
-  const validRoles = ['superadmin', 'staff', 'sales', 'finance'];
-  if (!validRoles.includes(role)) {
-    return res.status(400).json({ message: 'Invalid role' });
-  }
-
   try {
-    const checkSql = 'SELECT * FROM admins WHERE email = $1';
-    const existing = await db.query(checkSql, [email]);
+    // 🔹 Authorization check: only superadmin (role_id 1) can create admins
+    if (!req.user || req.user.role_id !== 1) {
+      return res.status(403).json({ message: 'Only superadmin can create new admins' });
+    }
+
+    // 🔹 Validate role_id
+    const roleCheck = await db.query(
+      'SELECT id FROM admin_roles WHERE id = $1',
+      [role_id]
+    );
+
+    if (roleCheck.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid role_id' });
+    }
+
+    // 🔹 Check existing admin
+    const existing = await db.query(
+      'SELECT id FROM admins WHERE email = $1',
+      [email]
+    );
 
     if (existing.rows.length > 0) {
       return res.status(409).json({ message: 'Admin already exists with this email' });
@@ -39,18 +51,24 @@ const adminSignUp = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const insertSql = `
-      INSERT INTO admins (name, email, phone, password_hash, role)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, name, email, phone, role, created_at
+      INSERT INTO admins (name, email, phone, password_hash, role_id, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, name, email, phone, role_id, created_by, created_at
     `;
 
-    const result = await db.query(insertSql, [name, email, phone, hashedPassword, role]);
+    const result = await db.query(insertSql, [
+      name,
+      email,
+      phone,
+      hashedPassword,
+      role_id,
+      req.user.id,
+    ]);
 
-    return res.status(201).json({
+    res.status(201).json({
       message: 'Admin signup successful',
       admin: result.rows[0],
     });
-
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).json({ message: 'Unexpected server error', error: err.message });
@@ -79,7 +97,15 @@ const adminLogin = async (req, res) => {
   }
 
   try {
-    const sql = 'SELECT * FROM admins WHERE email = $1';
+    const sql = `
+      SELECT a.id, a.name, a.email, a.phone, a.password_hash,
+             a.role_id,
+             r.name AS role
+      FROM admins a
+      JOIN admin_roles r ON a.role_id = r.id
+      WHERE a.email = $1
+    `;
+
     const result = await db.query(sql, [email]);
 
     if (result.rows.length === 0) {
@@ -94,7 +120,13 @@ const adminLogin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
+      {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role_id: admin.role_id,  
+        role: admin.role
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7h' }
     );
@@ -107,8 +139,9 @@ const adminLogin = async (req, res) => {
         name: admin.name,
         email: admin.email,
         phone: admin.phone,
-        role: admin.role
-      }
+        role: admin.role,
+        role_id: admin.role_id
+      },
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -138,7 +171,14 @@ const getAdminData = async (req, res) => {
   }
 
   try {
-    const sql = 'SELECT id, name, email, phone, role, created_at FROM admins WHERE id = $1';
+    const sql = `
+      SELECT a.id, a.name, a.email, a.phone, a.created_at, a.created_by,
+             r.name AS role
+      FROM admins a
+      JOIN admin_roles r ON a.role_id = r.id
+      WHERE a.id = $1
+    `;
+
     const result = await db.query(sql, [requestedId]);
 
     if (result.rows.length === 0) {
@@ -152,4 +192,31 @@ const getAdminData = async (req, res) => {
   }
 };
 
-module.exports = { adminSignUp, adminLogin, getAdminData };
+// Get admins by role_id
+const getAdminsByRole = async (req, res) => {
+  const roleId = parseInt(req.params.role_id || req.query.role_id);
+
+  if (!roleId || isNaN(roleId)) {
+    return res.status(400).json({ message: 'role_id is required and must be a number' });
+  }
+
+  try {
+    const sql = `
+      SELECT a.id, a.name, a.email, a.phone, a.created_at, a.created_by,
+             r.name AS role
+      FROM admins a
+      JOIN admin_roles r ON a.role_id = r.id
+      WHERE a.role_id = $1
+      ORDER BY a.id DESC
+    `;
+
+    const result = await db.query(sql, [roleId]);
+
+    res.status(200).json({ admins: result.rows });
+  } catch (err) {
+    console.error('getAdminsByRole error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+module.exports = { adminSignUp, adminLogin, getAdminData, getAdminsByRole };

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const verifyToken = require('../middleware/auth');
+const { verifyToken, isSales, isAccount, isOperation, isSuperAdmin } = require('../middleware/auth');
 
 const adminController = require('../controller/adminController/adminController');
 const agentController = require('../controller/agentController/agentController');
@@ -17,11 +17,13 @@ const kycController = require("../controller/customerController/kycController");
 const  trackingController  = require('../controller/trackingController/trackingController');
 
 // Admin Signup Route
-router.post('/signup', adminController.adminSignUp);
+router.post('/signup', verifyToken, isSuperAdmin, adminController.adminSignUp);
 // Admin Login Route
 router.post('/login', adminController.adminLogin);
 // Admin Get Data Route
 router.get('/get-admin/:id', verifyToken, adminController.getAdminData);
+// Get admins by role
+router.get('/get-admins/role/:role_id', verifyToken, isSuperAdmin, adminController.getAdminsByRole);
 
 
 // Agent Routes
