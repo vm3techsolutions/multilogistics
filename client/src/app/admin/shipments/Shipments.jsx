@@ -5,7 +5,7 @@ import { fetchCourierExports } from "@/store/slices/courierExportSlice";
 import { useRouter } from "next/navigation";
 import { Pencil, FileText, Receipt, MapPin } from "lucide-react";
 
-const ShipmentList = ({ searchQuery }) => {
+const ShipmentList = ({ searchQuery, exportType }) => {
     const dispatch = useDispatch();
     const router = useRouter();
     //Modal
@@ -31,12 +31,17 @@ const ShipmentList = ({ searchQuery }) => {
     // Filter shipments by search
     const filteredShipments = sortedShipments.filter((s) => {
         const q = searchQuery.toLowerCase();
-        return (
-            s.awb_number?.toLowerCase().includes(q) ||
-            s.shipper_name?.toLowerCase().includes(q) ||
-            s.consignee_name?.toLowerCase().includes(q) ||
-            s.forwarding_company?.toLowerCase().includes(q)
-        );
+        const matchesSearch =
+    s.awb_number?.toLowerCase().includes(q) ||
+    s.shipper_name?.toLowerCase().includes(q) ||
+    s.consignee_name?.toLowerCase().includes(q) ||
+            s.forwarding_company?.toLowerCase().includes(q);
+
+            const matchesExportType =
+    !exportType || s.export_type === exportType;
+
+  return matchesSearch && matchesExportType;
+        
     });
 
     // Pagination

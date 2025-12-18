@@ -46,12 +46,15 @@ const CourierExportView = ({ params }) => {
   const { selectedExport, loading, error } = useSelector((state) => state.courierExports);
 //   const exportData = courierExportData || selectedExport || {};
 
+
 const data = selectedExport || {};  // Fetch export data by ID
     useEffect(() => {
   if (id) dispatch(fetchCourierExportById(id));
 
   return () => dispatch(clearSelectedExport());
 }, [id, dispatch]);
+
+const isIndividual = data.export_type === "individual";
 
 useEffect(() => {
     const style = document.createElement("style");
@@ -316,51 +319,122 @@ const grandTotal = Number(amount || 0) + chargesTotal;
           </div>
 
           {/* Shipment summary row */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div style={{ background: "#fff", padding: "8px", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-              <p><strong>Place Of Delivery:</strong> {place_of_delivery || "-"}</p>
-              <p><strong>Forwarding Company:</strong> {forwarding_company || "-"}</p>
-            </div>
-            <div style={{ background: "#fff", padding: "8px", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-              <p><strong>Correspondence No:</strong> {correspondence_number || "-"}</p>
-              <p><strong>Packages:</strong> {package_count || packagesToRender.length || "-"}</p>
-            </div>
-            <div style={{ background: "#fff", padding: "8px", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-              <p><strong>Gross Weight:</strong> {weight || "-"}</p>
-              <p><strong>Amount:</strong> {amount ? `₹${Number(amount).toFixed(2)}` : "-"}</p>
-            </div>
-          </div>
+          {isIndividual && (
+  <div className="grid grid-cols-3 gap-4 mt-4">
+    <div
+      style={{
+        background: "#fff",
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #e5e7eb",
+      }}
+    >
+      <p><strong>Place Of Delivery:</strong> {place_of_delivery || "-"}</p>
+      <p><strong>Forwarding Company:</strong> {forwarding_company || "-"}</p>
+    </div>
 
-          {/* Items table */}
-          <div style={{ marginTop: "12px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>Items</h3>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thHeader}>Item</th>
-                  <th style={thHeader}>Qty</th>
-                  <th style={thHeader}>Weight</th>
-                  <th style={thHeader}>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {itemsArray.length > 0
-  ? itemsArray.map((it, idx) => (
-                      <tr key={idx}>
-                        <td style={td}>{it?.item_name || "-"}</td>
-                        <td style={{ ...td, textAlign: "center" }}>{it?.item_quantity || "-"}</td>
-                        <td style={{ ...td, textAlign: "center" }}>{it?.item_weight || "-"}</td>
-                        <td style={td}>{it?.item_description || "-"}</td>
-                      </tr>
-                    ))
-                  : (
-                      <tr>
-                        <td colSpan="4" style={{ ...td, textAlign: "center" }}>No items added</td>
-                      </tr>
-                    )}
-              </tbody>
-            </table>
-          </div>
+    <div
+      style={{
+        background: "#fff",
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #e5e7eb",
+      }}
+    >
+      <p><strong>Correspondence No:</strong> {correspondence_number || "-"}</p>
+      <p><strong>Packages:</strong> {package_count || packagesToRender.length || "-"}</p>
+    </div>
+
+    <div
+      style={{
+        background: "#fff",
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #e5e7eb",
+      }}
+    >
+      <p><strong>Gross Weight:</strong> {weight || "-"}</p>
+      <p>
+        <strong>Amount:</strong>{" "}
+        {amount ? `₹${Number(amount).toFixed(2)}` : "-"}
+      </p>
+    </div>
+  </div>
+)}
+     
+
+{/* Items / Shipment Details Table */}
+<div style={{ marginTop: "12px" }}>
+  <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "8px" }}>
+    {isIndividual ? "Items" : "Shipment Details"}
+  </h3>
+
+  <table style={tableStyle}>
+    <thead>
+      <tr>
+        {isIndividual ? (
+          <>
+            <th style={thHeader}>Item</th>
+            <th style={thHeader}>Qty</th>
+            <th style={thHeader}>Rate</th>
+            <th style={thHeader}>Amount</th>
+            <th style={thHeader}>HSN Code</th>
+          </>
+        ) : (
+          <>
+            <th style={thHeader}>Parameter</th>
+            <th style={thHeader}>Details</th>
+          </>
+        )}
+      </tr>
+    </thead>
+
+    <tbody>
+      {isIndividual ? (
+        itemsArray.length > 0 ? (
+          itemsArray.map((it, idx) => (
+            <tr key={idx}>
+              <td style={{ ...td, textAlign: "center" }}>{it?.item_name || "-"}</td>
+              <td style={{ ...td, textAlign: "center" }}>{it?.item_quantity || "-"}</td>
+              <td style={{ ...td, textAlign: "center" }}>{it?.rate || "-"}</td>
+              <td style={{ ...td, textAlign: "center" }}>{it?.amount || "-"}</td>
+              <td style={{ ...td, textAlign: "center" }}>{it?.hsn_code || "-"}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="4" style={{ ...td, textAlign: "center" }}>
+              No items added
+            </td>
+          </tr>
+        )
+      ) : (
+        <>
+          <tr>
+            <td style={{ ...td, fontWeight: 600 }}>Place of Delivery</td>
+            <td style={td}>{place_of_delivery || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ ...td, fontWeight: 600 }}>Forwarding Company</td>
+            <td style={td}>{forwarding_company || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ ...td, fontWeight: 600 }}>Correspondence No</td>
+            <td style={td}>{correspondence_number || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ ...td, fontWeight: 600 }}>Packages</td>
+            <td style={td}>{package_count || "-"}</td>
+          </tr>
+          <tr>
+            <td style={{ ...td, fontWeight: 600 }}>Gross Weight</td>
+            <td style={td}>{weight || "-"}</td>
+          </tr>
+        </>
+      )}
+    </tbody>
+  </table>
+</div>
 
           
 

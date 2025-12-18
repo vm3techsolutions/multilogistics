@@ -213,6 +213,12 @@ const CreateCourierExportPage = ({
   const handleItemChange = (index, e) => {
     const newItems = [...formData.items];
     newItems[index][e.target.name] = e.target.value;
+    const qty = Number(newItems[index].item_quantity);
+    const rate = Number(newItems[index].rate);
+
+    if (!isNaN(qty) && !isNaN(rate)) {
+      newItems[index].amount = (qty * rate).toString();
+    }
     setFormData({ ...formData, items: newItems });
   };
 
@@ -336,6 +342,20 @@ const CreateCourierExportPage = ({
     dispatch(resetQuotationState());
     dispatch(clearSelectedCustomer());
   };
+
+  const itemsTotal = formData.items.reduce((sum, item) => {
+    const amount = Number(item.amount);
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0);
+
+  useEffect(() => {
+    if (formData.export_type === "individual") {
+      setFormData((prev) => ({
+        ...prev,
+        final_total: itemsTotal.toString(),
+      }));
+    }
+  }, [itemsTotal, formData.export_type]);
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
@@ -488,7 +508,7 @@ const CreateCourierExportPage = ({
           <input type="number" name="height" placeholder="Height" value={formData.height} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
           <input type="number" name="chargeable_weight" placeholder="Weight" value={formData.chargeable_weight} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
           <input type="number" name="package_count" placeholder="Packages" value={formData.package_count} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="final_total" placeholder="Amount" value={formData.final_total} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input type="number" name="final_total" placeholder="Amount" value={ formData.export_type === "individual" ? itemsTotal : formData.final_total} onChange={handleChange} readOnly={formData.export_type === "individual"} className="p-2 rounded bg-gray-100 border border-gray-200" />
         </div>
 
         {/* Items */}
@@ -532,7 +552,7 @@ const CreateCourierExportPage = ({
                   name="amount"
                   placeholder="Amount"
                   value={item.amount}
-                  onChange={(e) => handleItemChange(index, e)}
+                  readOnly
                   className="p-2 rounded bg-gray-100 border border-gray-200"
                 />
 
@@ -573,6 +593,8 @@ const CreateCourierExportPage = ({
           </>
         )}
 
+        
+
         {/* Actions */}
         <div className="flex gap-4 mt-4">
           <button type="submit" disabled={loading} className="px-6 py-2 bg-blue-600 text-white rounded">
@@ -597,6 +619,8 @@ const CreateCourierExportPage = ({
               >
                 Add Item
               </button>
+
+            
             </>
           )}
 
