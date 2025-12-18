@@ -32,16 +32,16 @@ const ShipmentList = ({ searchQuery, exportType }) => {
     const filteredShipments = sortedShipments.filter((s) => {
         const q = searchQuery.toLowerCase();
         const matchesSearch =
-    s.awb_number?.toLowerCase().includes(q) ||
-    s.shipper_name?.toLowerCase().includes(q) ||
-    s.consignee_name?.toLowerCase().includes(q) ||
+            s.awb_number?.toLowerCase().includes(q) ||
+            s.shipper_name?.toLowerCase().includes(q) ||
+            s.consignee_name?.toLowerCase().includes(q) ||
             s.forwarding_company?.toLowerCase().includes(q);
 
-            const matchesExportType =
-    !exportType || s.export_type === exportType;
+        const matchesExportType =
+            !exportType || s.export_type === exportType;
 
-  return matchesSearch && matchesExportType;
-        
+        return matchesSearch && matchesExportType;
+
     });
 
     // Pagination
