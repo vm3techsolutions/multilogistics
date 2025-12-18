@@ -52,6 +52,22 @@ export const fetchCourierExportById = createAsyncThunk(
   }
 );
 
+/* ------------------------- UPDATE COURIER EXPORT ------------------------- */
+export const updateCourierExport = createAsyncThunk(
+  "courierExports/update",
+  async ({ id, formData }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axiosInstance.put(`/courier-exports/${id}`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data.courier_export;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: "Failed to update courier export" });
+    }
+  }
+);
+
 /* ------------------------------- SLICE SETUP ------------------------------- */
 const courierExportSlice = createSlice({
   name: "courierExports",
@@ -60,6 +76,7 @@ const courierExportSlice = createSlice({
     selectedExport: null,
     loading: false,
     success: false,
+    successMessage: "",
     error: null,
     existingExports: [], // For handling 409 conflict
     currentPage: 1,
@@ -82,6 +99,9 @@ const courierExportSlice = createSlice({
     clearSelectedExport: (state) => {
       state.selectedExport = null;
     },
+    clearSuccessMessage: (state) => {
+    state.successMessage = "";
+  },
   },
   extraReducers: (builder) => {
     builder
@@ -137,6 +157,29 @@ const courierExportSlice = createSlice({
         } else {
           state.error = action.payload?.message || "Failed to create courier export";
         }
+      })
+
+       // Update export
+      .addCase(updateCourierExport.pending, (state) => {
+        state.loading = true;
+        state.success = false;
+        state.error = null;
+        state.successMessage = "";
+      })
+      .addCase(updateCourierExport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.selectedExport = action.payload;
+        state.successMessage = "Courier export updated successfully";
+
+        // Update the list if exists
+        const idx = state.list.findIndex((e) => e.id === action.payload.id);
+        if (idx >= 0) state.list[idx] = action.payload;
+      })
+      .addCase(updateCourierExport.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload?.message || "Failed to update courier export";
       });
   },
 });
@@ -146,5 +189,6 @@ export const {
   setPerPage,
   resetCourierExportState,
   clearSelectedExport,
+  clearSuccessMessage,
 } = courierExportSlice.actions;
 export default courierExportSlice.reducer;

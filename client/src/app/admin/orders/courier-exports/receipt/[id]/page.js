@@ -29,8 +29,11 @@ const ModernReceipt = () => {
         setExportData(exportRes);
 
         if (exportRes?.quotation_id) {
+
           const quotationRes = await dispatch(getQuotationById(exportRes.quotation_id)).unwrap();
+          console.log('Quotation data:', quotationRes);
           setQuotationData(quotationRes);
+          
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -126,9 +129,9 @@ const ModernReceipt = () => {
             {/* Pieces / DOX / Weight / Dimensions */}
             <tr>
               <td className="border p-2 font-semibold">PIECES</td>
-              <td className="border p-2">{e.pieces || "-"}</td>
+              <td className="border p-2">{e.package_count || "-"}</td>
               <td className="border p-2 font-semibold">DOX/SPX</td>
-              <td className="border p-2">{e.dox || "-"}</td>
+              <td className="border p-2">{e.document_type || "-"}</td>
               <td className="border p-2 font-semibold">WEIGHT</td>
               <td className="border p-2">{e.weight || "-"}</td>
               <td className="border p-2 font-semibold">DIMENSIONS (cm)</td>
@@ -193,7 +196,7 @@ const ModernReceipt = () => {
 
             {/* Charges */}
             <tr>
-              <td className="border p-2 font-semibold" colSpan={7}></td>
+              <td className="border p-2 font-semibold" colSpan={7}>This is non-negotiable courier way bill and all business undertaken is subject to our standard trading conditions printer on the reverse. If this Shipper copy. By tendering materials for shipment via MULTILOGISTICS PRIVATE LIMITED, it is deemed that shipper agrees to the terms and conditions stated here in and warrants that the information contained on this way bill is true & correct and that this package does not contain cash or any such item which congruences the provision of the Indian Post Office Act 1983. In case this consignment contains anything of value MULTILOGISTICS PRIVATE LIMITED recommends insurance of the same. MULTILOGISTICS PRIVATE LIMITED's liability on this shipment is limited to Rs. 100/- CWB or cost of reconstruction whichever is lower.        </td>
               <td className="border p-2" colSpan={2}>
   <table className="w-full border-collapse text-sm">
     <tbody>
@@ -211,11 +214,11 @@ const ModernReceipt = () => {
       </tr>
       <tr>
         <td className="border p-1 font-semibold">E.C.TAX</td>
-        <td className="border p-1 text-right">{e.ec_tax || ""}</td>
+        <td className="border p-1 text-right" >{e.ec_tax || ""}</td>
       </tr>
       <tr>
         <td className="border p-1 font-semibold">TOTAL</td>
-        <td className="border p-1 text-right ">{e.amount || ""}</td>
+        <td className="border p-1 text-right ">{e.total || ""}</td>
       </tr>
     </tbody>
   </table>
@@ -224,12 +227,7 @@ const ModernReceipt = () => {
             </tr>
 
             {/* Footer */}
-            <tr>
-              <td className="border p-2 text-xs" colSpan={9}>
-                This is non-negotiable courier way bill and all business undertaken is subject to our standard trading conditions printed on the reverse. Ensure shipment complies with Indian Post Office Act 1983.
-              </td>
-            </tr>
-
+           
             <tr>
               <td className="border p-2 font-semibold">Print Name:</td>
               <td className="border p-2" colSpan={3}></td>

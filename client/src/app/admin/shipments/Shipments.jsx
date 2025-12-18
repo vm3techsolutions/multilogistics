@@ -24,8 +24,12 @@ const ShipmentList = ({ searchQuery }) => {
         dispatch(fetchCourierExports());
     }, [dispatch]);
 
+    const sortedShipments = [...list].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
     // Filter shipments by search
-    const filteredShipments = list.filter((s) => {
+    const filteredShipments = sortedShipments.filter((s) => {
         const q = searchQuery.toLowerCase();
         return (
             s.awb_number?.toLowerCase().includes(q) ||
@@ -50,6 +54,7 @@ const ShipmentList = ({ searchQuery }) => {
                 <table className="min-w-full border border-gray-300 divide-y divide-gray-200">
                     <thead className="lightBg">
                         <tr className="text-center">
+                            <th className="px-3 py-2 border">Sr. No</th>
                             <th className="px-4 py-2 border">Booking Date</th>
                             <th className="px-4 py-2 border">AWB No</th>
                             <th className="px-4 py-2 border">Shipper Name</th>
@@ -57,13 +62,18 @@ const ShipmentList = ({ searchQuery }) => {
                             <th className="px-4 py-2 border">Delivery Place</th>
                             <th className="px-4 py-2 border">Forwarding Company</th>
                             <th className="px-2 py-2 border">Correspondence No</th>
+                            <th className="px-4 py-2 border">Created At</th>
                             <th className="px-4 py-2 border">Action</th>
                         </tr>
                     </thead>
 
                     <tbody className="divide-y divide-gray-200 text-sm">
-                        {currentRows.map((ship) => (
+                        {currentRows.map((ship, index) => (
                             <tr key={ship.id} className="text-center hover:bg-gray-50">
+                                {/* SERIAL NO */}
+                                <td className="px-3 py-2 border">
+                                    {(currentPage - 1) * rowsPerPage + index + 1}
+                                </td>
                                 <td className="px-4 py-2 border">
                                     {new Date(ship.booking_date).toLocaleDateString("en-GB")}
                                 </td>
@@ -73,55 +83,59 @@ const ShipmentList = ({ searchQuery }) => {
                                 <td className="px-4 py-2 border">{ship.place_of_delivery}</td>
                                 <td className="px-4 py-2 border">{ship.forwarding_company}</td>
                                 <td className="px-2 py-2 border">{ship.correspondence_number}</td>
+                                {/* CREATED AT */}
+                                <td className="px-4 py-2 border">
+                                    {new Date(ship.created_at).toLocaleDateString("en-GB")}
+                                </td>
 
                                 <td className="px-4 py-2 border">
-    <div className="flex justify-center gap-3">
+                                    <div className="flex justify-center gap-3">
 
                                         {/* EDIT */}
-                                        {/* <button
+                                        <button
                                             className="p-2 bg-blue-600 text-white rounded-full"
                                             onClick={() => router.push(`/admin/orders/courier-exports/edit/${ship.id}`)}
                                             title="Edit"
                                         >
                                             <Pencil size={18} />
-                                        </button> */}
+                                        </button>
 
 
-        {/* INVOICE */}
-        <button
-            className="p-2  primaryText rounded-full"
-            onClick={() =>
-                router.push(`/admin/orders/courier-exports/invoice/${ship.id}`)
-            }
-            title="Invoice"
-        >
-            <FileText size={18} />
-        </button>
+                                        {/* INVOICE */}
+                                        <button
+                                            className="p-2  primaryText rounded-full"
+                                            onClick={() =>
+                                                router.push(`/admin/orders/courier-exports/invoice/${ship.id}`)
+                                            }
+                                            title="Invoice"
+                                        >
+                                            <FileText size={18} />
+                                        </button>
 
-        {/* RECEIPT */}
-        <button
-            className="p-2 primaryText rounded-full"
-            onClick={() =>
-                router.push(`/admin/orders/courier-exports/receipt/${ship.id}`)
-            }
-            title="Receipt"
-        >
-            <Receipt size={18} />
-        </button>
+                                        {/* RECEIPT */}
+                                        <button
+                                            className="p-2 primaryText rounded-full"
+                                            onClick={() =>
+                                                router.push(`/admin/orders/courier-exports/receipt/${ship.id}`)
+                                            }
+                                            title="Receipt"
+                                        >
+                                            <Receipt size={18} />
+                                        </button>
 
-        {/* ADDRESS LABEL */}
-        <button
-            className="p-2 primaryText rounded-full"
-            onClick={() =>
-                router.push(`/admin/orders/courier-exports/address/${ship.id}`)
-            }
-            title="Address Label"
-        >
-            <MapPin size={18} />
-        </button>
+                                        {/* ADDRESS LABEL */}
+                                        <button
+                                            className="p-2 primaryText rounded-full"
+                                            onClick={() =>
+                                                router.push(`/admin/orders/courier-exports/address/${ship.id}`)
+                                            }
+                                            title="Address Label"
+                                        >
+                                            <MapPin size={18} />
+                                        </button>
 
-    </div>
-</td>
+                                    </div>
+                                </td>
 
 
                             </tr>
@@ -145,8 +159,8 @@ const ShipmentList = ({ searchQuery }) => {
                         key={p}
                         onClick={() => setCurrentPage(p)}
                         className={`px-3 py-1 rounded ${currentPage === p
-                                ? "primaryBg text-white"
-                                : "bg-gray-300 hover:bg-blue-400"
+                            ? "primaryBg text-white"
+                            : "bg-gray-300 hover:bg-blue-400"
                             }`}
                     >
                         {p}

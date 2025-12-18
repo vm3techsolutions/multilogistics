@@ -267,8 +267,11 @@ const grandTotal = Number(amount || 0) + chargesTotal;
           >
             <img src="/assets/logo/logo.png" style={{ height: "80px" }} alt="logo" />
 
+            <div style={{ textAlign: "center", fontSize: "20px" }}>
+              <p><strong>{awb_number || "-"}</strong> </p>
+            </div>
+
             <div style={{ textAlign: "right", fontSize: "14px" }}>
-              <p><strong>AWB:</strong> {awb_number || "-"}</p>
               <p><strong>Booking Date:</strong> {booking_date ? new Date(booking_date).toLocaleDateString("en-GB") : (created_at ? new Date(created_at).toLocaleDateString("en-GB") : "-")}</p>
             </div>
           </div>
