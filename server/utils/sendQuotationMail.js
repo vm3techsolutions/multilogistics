@@ -173,8 +173,7 @@ const sendQuotationMail = async (customerEmail, quotation) => {
     <tbody>
       ${freightRows}
       <tr style="background:#f1f1f1; font-weight:600;">
-        <td style="${td}" colspan="3" align="right">Freight Total</td>
-        <td style="${td}">₹${formatAmount(freightTotal)}</td>
+        <td style="${td}" colspan="4" align="right">Freight Total</td>
         <td style="${td}">₹${formatAmount(freightTotal)}</td>
       </tr>
     </tbody>
@@ -199,14 +198,14 @@ const sendQuotationMail = async (customerEmail, quotation) => {
   </table>
 
   <!-- TOTAL -->
-  <div style="margin-top:25px;">
+  <div style="margin-top:25px; text-align:right;">
     <p><strong>Subtotal:</strong> ₹${formatAmount(subtotal)}</p>
     <p><strong>GST (18%):</strong> ₹${formatAmount(gst)}</p>
     <h3 style="color:#1f2937">Grand Total: <strong>₹${formatAmount(grandTotal)}</strong></h3>
   </div>
 
   <p style="text-align:center; margin-top:25px; color:#777;">
-    Thank you for choosing <b>Your Logistics Partner</b>.<br/>
+    Thank you for choosing <b>Multilogistics</b>.<br/>
     © ${new Date().getFullYear()} All Rights Reserved.
   </p>
 
