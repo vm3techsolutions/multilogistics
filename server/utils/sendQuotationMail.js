@@ -30,25 +30,45 @@ const sendQuotationMail = async (customerEmail, quotation) => {
       .join("") || "";
 
   // ---------------- FREIGHT CHARGES ----------------
-  const freightRows =
-    quotation.charges
-      ?.filter((c) => c.type === "freight")
-      .map(
-        (c) => `
-      <tr>
-        <td style="${td}">${c.charge_name}</td>
-        <td style="${td}">${c.rate_per_kg || ""}</td>
-        <td style="${td}">${c.weight_kg || ""}</td>
-        <td style="${td}">₹${formatAmount(c.amount)}</td>
-        <td style="${td}">₹${formatAmount(c.amount)}</td>
-      </tr>`
-      )
-      .join("") || "";
+  const freightCharges = quotation.charges?.filter((c) => c.type === "freight") || [];
+  const baseFreight = freightCharges
+    .filter((c) => c.charge_name !== "FSC")
+    .reduce((sum, c) => sum + Number(c.amount || 0), 0);
 
-  const totalFreight = quotation.charges
-    ?.filter((c) => c.type === "freight")
-    .reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0;
+  // FSC %
+  const fscCharge = freightCharges.find((c) => c.charge_name === "FSC");
+  const fscPercent = Number(fscCharge?.amount || 0);
 
+  // FSC Amount
+  const fscAmount = (baseFreight * fscPercent) / 100;
+
+  // Final Freight Total
+  const freightTotal = baseFreight + fscAmount;
+
+  const freightRows = freightCharges
+    .map((c) => {
+      const isFsc = c.charge_name === "FSC";
+      // const amount = isFsc
+      //   ? c.amount // show FSC percentage directly
+      //   : Number(c.amount || 0);
+
+      return `
+    <tr>
+      <td style="${td}">${isFsc ? "FSC (%)" : c.charge_name}</td>
+      <td style="${td}">${c.rate_per_kg || ""}</td>
+      <td style="${td}">${isFsc ? "" : c.weight_kg || ""}</td>
+      <td style="${td}">
+            ${isFsc ? `${fscPercent}%` : `₹${formatAmount(c.amount)}`}
+      </td>
+      <td style="${td}">
+            ${isFsc ? `₹${formatAmount(fscAmount)}` : `₹${formatAmount(c.amount)}`}
+      </td>
+
+    </tr>`;
+    })
+    .join("");
+
+ 
   // ---------------- DESTINATION CHARGES ----------------
   const destinationRows =
     quotation.charges
@@ -67,8 +87,13 @@ const sendQuotationMail = async (customerEmail, quotation) => {
     .reduce((sum, c) => sum + Number(c.amount || 0), 0) || 0;
 
   // FINAL TOTAL
-  const grandTotal = totalFreight + totalDestination;
-  const gst = grandTotal * 0.18;
+  // const grandTotal = totalFreight + totalDestination;
+  // const gst = grandTotal * 0.18;
+
+  // const freightTotal = Number(quotation.total_freight_amount || 0);
+  const subtotal = Number(quotation.total || 0);
+  const gst = subtotal * 0.18;
+  const grandTotal = Number(quotation.final_total || 0);
 
   // ---------------- EMAIL HTML ----------------
 
@@ -149,8 +174,8 @@ const sendQuotationMail = async (customerEmail, quotation) => {
       ${freightRows}
       <tr style="background:#f1f1f1; font-weight:600;">
         <td style="${td}" colspan="3" align="right">Freight Total</td>
-        <td style="${td}">₹${formatAmount(totalFreight)}</td>
-        <td style="${td}">₹${formatAmount(totalFreight)}</td>
+        <td style="${td}">₹${formatAmount(freightTotal)}</td>
+        <td style="${td}">₹${formatAmount(freightTotal)}</td>
       </tr>
     </tbody>
   </table>
@@ -175,9 +200,9 @@ const sendQuotationMail = async (customerEmail, quotation) => {
 
   <!-- TOTAL -->
   <div style="margin-top:25px;">
-    <p><strong>Final Total:</strong> ₹${formatAmount(grandTotal)}</p>
+    <p><strong>Subtotal:</strong> ₹${formatAmount(subtotal)}</p>
     <p><strong>GST (18%):</strong> ₹${formatAmount(gst)}</p>
-    <h3 style="color:#1f2937">Grand Total: <strong>₹${formatAmount(quotation.finalTotal)}</strong></h3>
+    <h3 style="color:#1f2937">Grand Total: <strong>₹${formatAmount(grandTotal)}</strong></h3>
   </div>
 
   <p style="text-align:center; margin-top:25px; color:#777;">
