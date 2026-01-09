@@ -39,7 +39,7 @@ export default function TrackPage() {
             placeholder="Enter Tracking Number"
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
-            className="flex-1 border rounded-xl p-3 shadow-sm focus:ring-2 focus:ring-purple-400"
+            className="flex-1 text-gray-800 border rounded-xl p-3 shadow-sm focus:ring-2 focus:ring-purple-400"
           />
 
           <button
