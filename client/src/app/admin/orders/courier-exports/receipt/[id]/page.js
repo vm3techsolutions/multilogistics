@@ -100,13 +100,14 @@ const ModernReceipt = () => {
       <div ref={pdfRef} className="bg-white shadow-lg rounded-xl p-8 w-full max-w-5xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <img src="/assets/logo/logo.png" alt="logo" className="h-20" />
+          {/* <img src="/assets/logo/logo.png" alt="logo" className="h-20" /> */}
+          <p style={{ fontSize: "20px" }}><strong>{e.awb_number || "-"}</strong> </p>
           <div className="text-right text-xs space-y-1">
             <p><strong>Corporate Office:</strong> MULTILOGISTICS PRIVATE LIMITED, Pune - 411030</p>
             <p><strong>Tel:</strong> (020) 2444 6770</p>
             <p><strong>Email:</strong> info@multilogistics.co.in</p>
             <p><strong>Web:</strong> https://multilogistics.co.in/</p>
-            <p><strong>Airway Bill:</strong> {e.awb_number || "-"}</p>
+            
           </div>
         </div>
 

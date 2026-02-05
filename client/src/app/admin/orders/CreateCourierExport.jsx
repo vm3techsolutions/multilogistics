@@ -26,10 +26,11 @@ const CreateCourierExportPage = ({
 }) => {
   const dispatch = useDispatch();
   const { singleQuotation } = useSelector((state) => state.quotation);
-  const { list: customers, selectedCustomer } = useSelector((state) => state.customers);
-  const { loading, success, error, existingExports, successMessage } = useSelector(
-    (state) => state.courierExports
+  const { list: customers, selectedCustomer } = useSelector(
+    (state) => state.customers,
   );
+  const { loading, success, error, existingExports, successMessage } =
+    useSelector((state) => state.courierExports);
   const { agents } = useSelector((state) => state.agents); // get all agents
 
   const [customerSearch, setCustomerSearch] = useState("");
@@ -87,7 +88,7 @@ const CreateCourierExportPage = ({
     }
   }, [singleQuotation, dispatch]);
 
-  // For Edit Mode 
+  // For Edit Mode
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setFormData({
@@ -121,20 +122,19 @@ const CreateCourierExportPage = ({
 
         items:
           initialData.export_type === "individual" &&
-            Array.isArray(initialData.items)
+          Array.isArray(initialData.items)
             ? initialData.items
             : [],
       });
     }
   }, [mode, initialData]);
 
-
   // 1️⃣ Update form with quotation packages & weight
   useEffect(() => {
     if (singleQuotation) {
-      const agent = agents.find(a => a.id === singleQuotation.agent_id);
+      const agent = agents.find((a) => a.id === singleQuotation.agent_id);
 
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         quotation_id: singleQuotation.id,
         customer_id: singleQuotation.customer_id,
@@ -143,13 +143,13 @@ const CreateCourierExportPage = ({
         // ✅ FORCE STRING FOR INPUTS
         chargeable_weight:
           singleQuotation.chargeable_weight !== null &&
-            singleQuotation.chargeable_weight !== undefined
+          singleQuotation.chargeable_weight !== undefined
             ? String(singleQuotation.chargeable_weight)
             : "",
         package_count: singleQuotation.packages?.length,
         final_total:
           singleQuotation.final_total !== null &&
-            singleQuotation.final_total !== undefined
+          singleQuotation.final_total !== undefined
             ? String(singleQuotation.final_total)
             : "",
         forwarding_company: agent?.name || "",
@@ -180,7 +180,7 @@ const CreateCourierExportPage = ({
     if (!formData.quote_no) {
       if (customerSearch.trim().length > 0) {
         const result = customers.filter((c) =>
-          c.name?.toLowerCase().includes(customerSearch.toLowerCase())
+          c.name?.toLowerCase().includes(customerSearch.toLowerCase()),
         );
         setFilteredCustomers(result);
       } else {
@@ -191,7 +191,6 @@ const CreateCourierExportPage = ({
     }
   }, [customerSearch, customers, formData.quote_no]);
 
-
   // On Selecting Customer → Auto-fill Shipper Details
   const selectCustomer = (cust) => {
     setCustomerSearch(cust.name);
@@ -200,9 +199,9 @@ const CreateCourierExportPage = ({
 
     setFilteredCustomers([]);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customer_id: cust.id
+      customer_id: cust.id,
     }));
   };
 
@@ -227,7 +226,13 @@ const CreateCourierExportPage = ({
       ...formData,
       items: [
         ...formData.items,
-        { item_name: "", item_quantity: "", rate: "", amount: "", hsn_code: "" },
+        {
+          item_name: "",
+          item_quantity: "",
+          rate: "",
+          amount: "",
+          hsn_code: "",
+        },
       ],
     });
   };
@@ -244,17 +249,11 @@ const CreateCourierExportPage = ({
         ? Number(formData.quotation_id)
         : null,
 
-      quote_no:
-        formData.export_type === "corporate"
-          ? formData.quote_no
-          : null,
+      quote_no: formData.export_type === "corporate" ? formData.quote_no : null,
       booking_date: formData.booking_date,
       document_type: formData.document_type,
       export_type: formData.export_type,
-      customer_id:
-        formData.customer_id
-          ? Number(formData.customer_id)
-          : null,
+      customer_id: formData.customer_id ? Number(formData.customer_id) : null,
 
       shipper_name: formData.shipper_name,
       shipper_email: formData.shipper_email,
@@ -277,12 +276,12 @@ const CreateCourierExportPage = ({
       package_count: Number(formData.package_count),
       amount: Number(formData.final_total),
 
-      items: formData.items.map(item => ({
+      items: formData.items.map((item) => ({
         item_name: item.item_name,
         item_quantity: Number(item.item_quantity),
         rate: Number(item.rate),
         amount: Number(item.amount),
-        hsn_code: item.hsn_code || null
+        hsn_code: item.hsn_code || null,
       })),
     };
 
@@ -307,7 +306,6 @@ const CreateCourierExportPage = ({
   //     handleReset();
   //   }
   // }, [success]);
-
 
   const handleReset = () => {
     setFormData({
@@ -335,7 +333,13 @@ const CreateCourierExportPage = ({
       package_count: "",
       final_total: "",
       items: [
-        { item_name: "", item_quantity: "", rate: "", amount: "", hsn_code: "" },
+        {
+          item_name: "",
+          item_quantity: "",
+          rate: "",
+          amount: "",
+          hsn_code: "",
+        },
       ],
     });
     dispatch(resetCourierExportState());
@@ -360,15 +364,35 @@ const CreateCourierExportPage = ({
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Create Export</h1>
-        <Link
-          href="/admin/shipments"
-          className="px-4 py-2 bg-blue-700 text-white rounded inline-block"
-        >
-          Back To Export List
-        </Link>
-      </div>
+        <h1 className="text-2xl font-bold">
+          {mode === "edit" ? "Edit Export" : "Create Export"}
+        </h1>
 
+        <div className="flex gap-3">
+          {/* VIEW QUOTATION */}
+          {(formData.quotation_id || formData.quote_no) && (
+            <Link
+              href={
+                formData.quotation_id
+                  ? `/admin/quotation/view/${formData.quotation_id}`
+                  : `/admin/quotation/view?quote_no=${formData.quote_no}`
+              }
+              target="_blank"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              View Quotation
+            </Link>
+          )}
+
+          {/* BACK BUTTON */}
+          <Link
+            href="/admin/shipments"
+            className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+          >
+            Back To Export List
+          </Link>
+        </div>
+      </div>
 
       <form
         onSubmit={(e) => {
@@ -379,7 +403,6 @@ const CreateCourierExportPage = ({
       >
         {/* Quotation & Booking */}
         <div className="grid grid-cols-3 gap-4">
-
           <select
             name="export_type"
             value={formData.export_type}
@@ -404,7 +427,11 @@ const CreateCourierExportPage = ({
           )}
 
           {/* Hidden Quotation ID */}
-          <input type="hidden" name="quotation_id" value={formData.quotation_id} />
+          <input
+            type="hidden"
+            name="quotation_id"
+            value={formData.quotation_id}
+          />
 
           <input
             type="date"
@@ -433,7 +460,6 @@ const CreateCourierExportPage = ({
           />
         </div>
 
-
         {/* Shipper Details */}
         <p className="font-semibold mt-4">Shipper Details :</p>
         <div className="grid grid-cols-2 gap-4 mt-2">
@@ -446,7 +472,7 @@ const CreateCourierExportPage = ({
               value={customerSearch || formData.shipper_name}
               onChange={(e) => {
                 handleChange(e);
-                setCustomerSearch(e.target.value);  // Update search input
+                setCustomerSearch(e.target.value); // Update search input
               }}
               autoComplete="off"
               className="p-2 rounded bg-gray-100 border border-gray-200 w-full"
@@ -468,23 +494,79 @@ const CreateCourierExportPage = ({
             )}
           </div>
 
-          <input type="text" name="shipper_mobile" placeholder="Shipper Mobile No." value={formData.shipper_mobile} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="email" name="shipper_email" placeholder="Shipper Email" value={formData.shipper_email} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
-          <input type="text" name="shipper_address" placeholder="Shipper Address" value={formData.shipper_address} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+          <input
+            type="text"
+            name="shipper_mobile"
+            placeholder="Shipper Mobile No."
+            value={formData.shipper_mobile}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="email"
+            name="shipper_email"
+            placeholder="Shipper Email"
+            value={formData.shipper_email}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2"
+          />
+          <input
+            type="text"
+            name="shipper_address"
+            placeholder="Shipper Address"
+            value={formData.shipper_address}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2"
+          />
         </div>
 
         {/* Consignee Details */}
         <p className="font-semibold mt-4">Consignee Details :</p>
         <div className="grid grid-cols-2 gap-4 mt-2">
-          <input type="text" name="consignee_name" placeholder="Consignee Name" value={formData.consignee_name} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="text" name="consignee_mobile" placeholder="Consignee Mobile No." value={formData.consignee_mobile} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="email" name="consignee_email" placeholder="Consignee Email" value={formData.consignee_email} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
-          <input type="text" name="consignee_address" placeholder="Consignee Address" value={formData.consignee_address} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2" />
+          <input
+            type="text"
+            name="consignee_name"
+            placeholder="Consignee Name"
+            value={formData.consignee_name}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="text"
+            name="consignee_mobile"
+            placeholder="Consignee Mobile No."
+            value={formData.consignee_mobile}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="email"
+            name="consignee_email"
+            placeholder="Consignee Email"
+            value={formData.consignee_email}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2"
+          />
+          <input
+            type="text"
+            name="consignee_address"
+            placeholder="Consignee Address"
+            value={formData.consignee_address}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200 col-span-2"
+          />
         </div>
 
         {/* Delivery & Package */}
         <div className="grid grid-cols-3 gap-4 mt-2">
-          <input type="text" name="place_of_delivery" placeholder="Place of Delivery" value={formData.place_of_delivery} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input
+            type="text"
+            name="place_of_delivery"
+            placeholder="Place of Delivery"
+            value={formData.place_of_delivery}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
           <select
             name="forwarding_company"
             value={formData.forwarding_company}
@@ -499,16 +581,70 @@ const CreateCourierExportPage = ({
             ))}
           </select>
 
-          <input type="text" name="correspondence_number" placeholder="Correspondance No." value={formData.correspondence_number} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input
+            type="text"
+            name="correspondence_number"
+            placeholder="Correspondance No."
+            value={formData.correspondence_number}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-2">
-          <input type="number" name="length" placeholder="Length" value={formData.length} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="width" placeholder="Width" value={formData.width} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="height" placeholder="Height" value={formData.height} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="chargeable_weight" placeholder="Weight" value={formData.chargeable_weight} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="package_count" placeholder="Packages" value={formData.package_count} onChange={handleChange} className="p-2 rounded bg-gray-100 border border-gray-200" />
-          <input type="number" name="final_total" placeholder="Amount" value={ formData.export_type === "individual" ? itemsTotal : formData.final_total} onChange={handleChange} readOnly={formData.export_type === "individual"} className="p-2 rounded bg-gray-100 border border-gray-200" />
+          <input
+            type="number"
+            name="length"
+            placeholder="Length"
+            value={formData.length}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="number"
+            name="width"
+            placeholder="Width"
+            value={formData.width}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="number"
+            name="height"
+            placeholder="Height"
+            value={formData.height}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="number"
+            name="chargeable_weight"
+            placeholder="Weight"
+            value={formData.chargeable_weight}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="number"
+            name="package_count"
+            placeholder="Packages"
+            value={formData.package_count}
+            onChange={handleChange}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
+          <input
+            type="number"
+            name="final_total"
+            placeholder="Amount"
+            value={
+              formData.export_type === "individual"
+                ? itemsTotal
+                : formData.final_total
+            }
+            onChange={handleChange}
+            readOnly={formData.export_type === "individual"}
+            className="p-2 rounded bg-gray-100 border border-gray-200"
+          />
         </div>
 
         {/* Items */}
@@ -518,8 +654,10 @@ const CreateCourierExportPage = ({
             <p className="font-semibold mt-4">Items :</p>
 
             {formData.items.map((item, index) => (
-              <div key={index} className="grid grid-cols-6 gap-4 mb-2 items-center">
-
+              <div
+                key={index}
+                className="grid grid-cols-6 gap-4 mb-2 items-center"
+              >
                 <input
                   type="text"
                   name="item_name"
@@ -571,7 +709,13 @@ const CreateCourierExportPage = ({
                     type="button"
                     onClick={() => {
                       const newItems = [...formData.items];
-                      newItems[index] = { item_name: "", item_quantity: "", rate: "", amount: "", hsn_code: "" };
+                      newItems[index] = {
+                        item_name: "",
+                        item_quantity: "",
+                        rate: "",
+                        amount: "",
+                        hsn_code: "",
+                      };
                       setFormData({ ...formData, items: newItems });
                     }}
                     className="p-1 bg-yellow-400 rounded hover:bg-yellow-500"
@@ -593,11 +737,13 @@ const CreateCourierExportPage = ({
           </>
         )}
 
-        
-
         {/* Actions */}
         <div className="flex gap-4 mt-4">
-          <button type="submit" disabled={loading} className="px-6 py-2 bg-blue-600 text-white rounded">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 text-white rounded"
+          >
             {loading
               ? mode === "edit"
                 ? "Updating..."
@@ -606,7 +752,11 @@ const CreateCourierExportPage = ({
                 ? "Update Courier Export"
                 : "Create Courier Export"}
           </button>
-          <button type="button" onClick={handleReset} className="px-6 py-2 bg-gray-300 rounded">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-6 py-2 bg-gray-300 rounded"
+          >
             Cancel
           </button>
           {/* Add Item Button */}
@@ -619,11 +769,8 @@ const CreateCourierExportPage = ({
               >
                 Add Item
               </button>
-
-            
             </>
           )}
-
         </div>
       </form>
 
@@ -635,7 +782,9 @@ const CreateCourierExportPage = ({
               <p>Existing exports linked to this quotation:</p>
               <ul className="list-disc pl-5">
                 {existingExports.map((exp) => (
-                  <li key={exp.id}>{exp.awb_number} - {exp.quote_no}</li>
+                  <li key={exp.id}>
+                    {exp.awb_number} - {exp.quote_no}
+                  </li>
                 ))}
               </ul>
               <button
@@ -648,7 +797,6 @@ const CreateCourierExportPage = ({
           )}
         </div>
       )}
-
 
       {success && (
         <div className="bg-green-100 text-green-700 p-3 rounded mb-4">

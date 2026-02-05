@@ -268,7 +268,7 @@ const grandTotal = Number(amount || 0) + chargesTotal;
               justifyContent: "space-between",
             }}
           >
-            <img src="/assets/logo/logo.png" style={{ height: "80px" }} alt="logo" />
+            {/* <img src="/assets/logo/logo.png" style={{ height: "80px" }} alt="logo" /> */}
 
             <div style={{ textAlign: "center", fontSize: "20px" }}>
               <p><strong>{awb_number || "-"}</strong> </p>

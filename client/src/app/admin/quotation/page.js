@@ -2,11 +2,14 @@
 import React, { useState } from "react";
 import CreateQuotation from "./QuotationForm";
 import QuotationList from "./QuotationList";
+import CreateCargoQuote from "@/components/cargo/CreateCargoQuote";
+import CargoQuoteList from "@/components/cargo/CargoQuoteList";
 
 export default function QuotationPage() {
   const [formType, setFormType] = useState(""); // "Sea", "Cargo", "Courier"
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState(""); // courier | cargo | sea
 
   const openForm = (type) => {
     setFormType(type);
@@ -15,6 +18,10 @@ export default function QuotationPage() {
   const closeForm = () => {
     setFormType("");
   };
+
+  const refreshList = () => {
+  dispatch(getAllCargoQuotations()); // or getAllQuotations()
+};
 
   return (
     <div className="p-5 font-sans">
@@ -28,7 +35,6 @@ export default function QuotationPage() {
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
     >
       <path
         strokeLinecap="round"
@@ -39,36 +45,57 @@ export default function QuotationPage() {
     </svg>
     <input
       type="text"
-      placeholder="Search By ID/Name"
+      placeholder="Search By ID / Name"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
       className="w-full bg-transparent placeholder:font-bold outline-none text-sm"
     />
   </div>
 
+  {/* Type Dropdown */}
+  <select
+    value={typeFilter}
+    onChange={(e) => setTypeFilter(e.target.value)}
+    className="px-3 py-3 text-sm bg-[#F3F9FF] rounded-lg focus:outline-none"
+  >
+    {/* <option value="">All Types</option> */}
+    <option value="courier">Courier</option>
+    <option value="cargo">Cargo</option>
+    {/* <option value="sea">Sea</option> */}
+  </select>
+
   {/* Status Dropdown */}
   <select
-  value={statusFilter}
-  onChange={(e) => setStatusFilter(e.target.value)}
-  className="px-3 py-3 text-sm bg-[#F3F9FF] rounded-lg  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
->
-  <option value="">All Status</option>
-  <option value="draft">Draft</option>
-  <option value="approved">Approved</option>
-  <option value="rejected">Rejected</option>
-</select>
-
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+    className="px-3 py-3 text-sm bg-[#F3F9FF] rounded-lg focus:outline-none"
+  >
+    <option value="">All Status</option>
+    <option value="draft">Draft</option>
+    <option value="approved">Approved</option>
+    <option value="rejected">Rejected</option>
+  </select>
 </div>
 
 
 
       {/* Quotation List */}
       {formType === "" && (
-        <div className=" bg-white rounded-xl p-5 mb-5 min-h-[300px]">
-          {/* <h3 className="mb-3 text-lg font-medium">Quotations</h3> */}
-          <QuotationList searchQuery={searchQuery} statusFilter={statusFilter} />
-        </div>
-      )}
+  <div className="bg-white rounded-xl p-5 mb-5 min-h-[300px]">
+    {typeFilter === "cargo" ? (
+      <CargoQuoteList
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+      />
+    ) : (
+      <QuotationList
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+        typeFilter={typeFilter}
+      />
+    )}
+  </div>
+)}
 
       {/* Action Buttons (Right aligned) */}
       <div className="flex justify-end gap-3 mb-5">
@@ -105,6 +132,21 @@ export default function QuotationPage() {
             </button>
           </div>
           <CreateQuotation />
+        </div>
+      )}
+
+      {formType === "Cargo" && (
+        <div className="border rounded-lg p-5 mb-5 bg-white shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">New Cargo Quotation</h3>
+            <button
+              onClick={closeForm}
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Close
+            </button>
+          </div>
+          <CreateCargoQuote mode="create" onSuccess={refreshList} />
         </div>
       )}
     </div>
