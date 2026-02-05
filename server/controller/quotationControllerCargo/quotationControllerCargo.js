@@ -523,7 +523,7 @@ const updateCargoQuotation = async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Update main quotation
+    // Update main quotation (also set status back to 'draft' when edited)
     const updateQuotationQuery = `
       UPDATE cargo_export_quotations
       SET subject = $1,
@@ -541,9 +541,12 @@ const updateCargoQuotation = async (req, res) => {
           total_freight_amount = $13,
           total = $14,
           final_total = $15,
-          updated_by = $16,
+          status = 'draft',
+          status_updated_by = $16,
+          status_updated_at = NOW(),
+          updated_by = $17,
           updated_at = NOW()
-      WHERE id = $17
+      WHERE id = $18
     `;
     await client.query(updateQuotationQuery, [
       subject || null,
@@ -561,6 +564,7 @@ const updateCargoQuotation = async (req, res) => {
       totalFreightWithCCF,
       total,
       finalTotal,
+      sanitizeNumber(updated_by),
       sanitizeNumber(updated_by),
       quotationId
     ]);
@@ -630,7 +634,8 @@ const updateCargoQuotation = async (req, res) => {
         chargeable_weight,
         totalFreightWithCCF,
         total,
-        finalTotal
+        finalTotal,
+        status: 'draft'
       }
     });
 
@@ -643,53 +648,6 @@ const updateCargoQuotation = async (req, res) => {
   }
 };
 
-// Update Cargo Quotation Status
-const updateCargoQuotationStatus = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const quotationId = sanitizeNumber(req.params.id);
-    if (!quotationId) {
-      return res.status(400).json({ success: false, message: "Invalid cargo quotation ID" });
-    }
-
-    const { status, status_updated_by } = req.body;
-
-    if (!status || !['draft', 'sent', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
-    }
-
-    const updateQuery = `
-      UPDATE cargo_export_quotations
-      SET status = $1,
-          status_updated_by = $2,
-          status_updated_at = NOW()
-      WHERE id = $3
-      RETURNING id, quote_no, status
-    `;
-
-    const result = await client.query(updateQuery, [
-      status,
-      sanitizeNumber(status_updated_by),
-      quotationId
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Cargo quotation not found" });
-    }
-
-    res.json({
-      success: true,
-      message: "Cargo quotation status updated successfully",
-      data: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error updating cargo quotation status", error: error.message });
-  } finally {
-    client.release();
-  }
-};
 
 // Delete Cargo Quotation
 const deleteCargoQuotation = async (req, res) => {
@@ -745,5 +703,5 @@ module.exports = {
   getAllCargoQuotations,
   getCargoQuotationById,
   updateCargoQuotation,
-  updateCargoQuotationStatus
+  
 };
