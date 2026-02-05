@@ -10,6 +10,7 @@ const { createCourierExport, getAllCourierExports, getCourierExportById, updateC
 //const { createQuotation, getAllQuotations, getQuotationById, updateQuotation } = require('../controller/quotationController/quotationController');
 const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuoteNo, updateQuotation } = require('../controller/quotationController/quotationController');
 const quotationStatusController = require('../controller/quotationController/approveQuotation');
+const cargoQuotationController = require('../controller/quotationControllerCargo/quotationControllerCargo');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
 const upload = require("../config/multer");
@@ -61,6 +62,14 @@ router.get('/courier-exports/stats',verifyToken, getCourierStats);
 router.get("/recent-shipments", getRecentShipmentsController);
 router.get('/courier-exports-all', verifyToken, getAllCourierExports);
 router.get('/courier-exports/:id', verifyToken, getCourierExportById);
+
+// Cargo Quotation Routes
+router.post('/create-cargo-quotation', verifyToken, cargoQuotationController.createCargoQuotation);
+router.get('/get-all-cargo-quotations', verifyToken, cargoQuotationController.getAllCargoQuotations);
+router.get('/get-cargo-quotation/:id', verifyToken, cargoQuotationController.getCargoQuotationById);
+router.get('/get-cargo-quotation-by-quote-no/:quote_no', cargoQuotationController.getCargoQuotationByQuoteNo);
+router.put('/update-cargo-quotations/:id', verifyToken, cargoQuotationController.updateCargoQuotation);
+router.put('/approve-cargo-quotation/:id', verifyToken, cargoQuotationController.updateCargoQuotationStatus);
 
 // Tracking Routes 
 router.get("/track/:trackingNumber", trackingController.trackFedexShipment);
