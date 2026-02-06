@@ -12,6 +12,8 @@ const { createQuotation, getAllQuotations, getQuotationById , getQuotationByQuot
 const quotationStatusController = require('../controller/quotationController/approveQuotation');
 const cargoQuotationController = require('../controller/quotationControllerCargo/quotationControllerCargo');
 const quotationCargoStatusController = require('../controller/quotationControllerCargo/approveCargoQuotation');
+const seaQuotationController = require('../controller/quotationControllerSea/quotationControllerSea');
+const seaQuotationStatusController = require('../controller/quotationControllerSea/approveSeaQuotation');
 const { getCourierStats } = require('../controller/courierExportController/getCourierStatsController');
 const {getRecentShipmentsController} = require("../controller/courierExportController/getRecentShipmentsController");
 const upload = require("../config/multer");
@@ -72,6 +74,15 @@ router.get('/get-cargo-quotation-by-quote-no/:quote_no', cargoQuotationControlle
 router.put('/update-cargo-quotations/:id', verifyToken, cargoQuotationController.updateCargoQuotation);
 router.put('/approve-cargo-quotation/:id', verifyToken, quotationCargoStatusController.updateCargoQuotationStatus);
 router.post('/cargo-quotation/send-email/:id', verifyToken, quotationCargoStatusController.triggerCargoQuotationEmail);
+
+// Sea Quotation Routes
+router.post('/create-sea-quotation', verifyToken, seaQuotationController.createSeaQuotation);
+router.get('/get-all-sea-quotations', verifyToken, seaQuotationController.getAllSeaQuotations);
+router.get('/get-sea-quotation/:id', verifyToken, seaQuotationController.getSeaQuotationById);
+router.get('/get-sea-quotation-by-quote-no/:quote_no', seaQuotationController.getSeaQuotationByQuoteNo);
+router.put('/update-sea-quotations/:id', verifyToken, seaQuotationController.updateSeaQuotation);
+router.put('/approve-sea-quotation/:id', verifyToken, seaQuotationStatusController.updateSeaQuotationStatus);
+router.post('/sea-quotation/send-email/:id', verifyToken, seaQuotationStatusController.triggerSeaQuotationEmail);
 
 // Tracking Routes 
 router.get("/track/:trackingNumber", trackingController.trackFedexShipment);
