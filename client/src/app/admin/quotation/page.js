@@ -4,6 +4,7 @@ import CreateQuotation from "./QuotationForm";
 import QuotationList from "./QuotationList";
 import CreateCargoQuote from "@/components/cargo/CreateCargoQuote";
 import CargoQuoteList from "@/components/cargo/CargoQuoteList";
+import CreateSeaQuote from "@/components/sea/CreateSeaQuote";
 
 export default function QuotationPage() {
   const [formType, setFormType] = useState(""); // "Sea", "Cargo", "Courier"
@@ -123,7 +124,7 @@ export default function QuotationPage() {
       {formType === "Courier" && (
         <div className="border rounded-lg p-5 mb-5 bg-white shadow">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">New Courier Quotation</h3>
+            <h3 className="text-lg font-semibold"> Courier Quotation</h3>
             <button
               onClick={closeForm}
               className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
@@ -138,7 +139,7 @@ export default function QuotationPage() {
       {formType === "Cargo" && (
         <div className="border rounded-lg p-5 mb-5 bg-white shadow">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">New Cargo Quotation</h3>
+            <h3 className="text-lg font-semibold"> Cargo Quotation</h3>
             <button
               onClick={closeForm}
               className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
@@ -147,6 +148,21 @@ export default function QuotationPage() {
             </button>
           </div>
           <CreateCargoQuote mode="create" onSuccess={refreshList} />
+        </div>
+      )}
+
+      {formType === "Sea" && (
+        <div className="border rounded-lg p-5 mb-5 bg-white shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold"> Sea Quotation</h3>
+            <button
+              onClick={closeForm}
+              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Close
+            </button>
+          </div>
+          <CreateSeaQuote mode="create" onSuccess={refreshList} />
         </div>
       )}
     </div>

@@ -21,6 +21,9 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const {
     quotations = [],
     loading,
@@ -110,6 +113,12 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
       });
   };
 
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = filteredQuotations.slice(indexOfFirstRow, indexOfLastRow);
+
+  const totalPages = Math.ceil(filteredQuotations.length / rowsPerPage);
+
   if (loading)
     return <p className="text-gray-500">Loading cargo quotations...</p>;
   if (error) return <p className="text-red-500">{error.message || error}</p>;
@@ -136,6 +145,7 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
             <table className="min-w-full border border-gray-300 divide-y divide-gray-200">
               <thead className="lightBg">
                 <tr className="text-center">
+                  <th className="px-4 py-2 border">S.No</th>
                   <th className="px-4 py-2 border">Date</th>
                   <th className="px-4 py-2 border">Quotation No</th>
                   <th className="px-4 py-2 border">Customer</th>
@@ -148,8 +158,12 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
               </thead>
 
               <tbody className="divide-y divide-gray-200 text-sm">
-                {filteredQuotations.map((q) => (
+                {currentRows.map((q, index) => (
                   <tr key={q.id} className="text-center hover:bg-gray-50">
+                    <td className="px-4 py-2 border font-medium">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </td>
+
                     <td className="px-4 py-2 border">
                       {new Date(q.created_at).toLocaleDateString("en-GB")}
                     </td>
@@ -157,7 +171,7 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
                     <td
                       className="px-4 py-2 border text-blue-600 cursor-pointer"
                       onClick={() =>
-                        router.push(`/admin/cargo-quotation/view/${q.id}`)
+                        router.push(`/admin/quotation/cargo/invoice/${q.id}`)
                       }
                     >
                       {q.quote_no}
@@ -226,6 +240,28 @@ const CargoQuoteList = ({ searchQuery = "", statusFilter = "" }) => {
               </tbody>
             </table>
           )}
+
+          <div className="flex justify-center items-center mt-4 gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Prev
+            </button>
+
+            <span className="font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
 
           {isPopupOpen && selectedQuotation && (
             <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto">

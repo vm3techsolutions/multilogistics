@@ -361,6 +361,18 @@ const CreateCourierExportPage = ({
     }
   }, [itemsTotal, formData.export_type]);
 
+  const quotationNo =
+    formData.quote_no ||
+    initialData?.quote_no ||
+    singleQuotation?.quote_no ||
+    "";
+
+  const quotationId =
+    singleQuotation?.id ||
+    formData.quotation_id ||
+    initialData?.quotation_id ||
+    null;
+
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white shadow rounded-xl">
       <div className="flex justify-between items-center mb-6">
@@ -369,14 +381,10 @@ const CreateCourierExportPage = ({
         </h1>
 
         <div className="flex gap-3">
-          {/* VIEW QUOTATION */}
-          {(formData.quotation_id || formData.quote_no) && (
+          {/* ✅ VIEW QUOTATION – EDIT MODE ONLY */}
+          {mode === "edit" && quotationId && (
             <Link
-              href={
-                formData.quotation_id
-                  ? `/admin/quotation/view/${formData.quotation_id}`
-                  : `/admin/quotation/view?quote_no=${formData.quote_no}`
-              }
+              href={`/admin/quotation/invoice/${quotationId}`}
               target="_blank"
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >

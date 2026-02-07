@@ -193,10 +193,11 @@ const QuotationView = ({ quotationData }) => {
               justifyContent: "space-between",
             }}
           >
-            <img src="/assets/logo/logo.png" style={{ height: "80px" }} />
+            {/* <img src="/assets/logo/logo.png" style={{ height: "80px" }} /> */}
+            <p style={{ textAlign: "right", fontSize: "24px" }}><strong>{q.quote_no}</strong> </p>
 
             <div style={{ textAlign: "right", fontSize: "14px" }}>
-              <p><strong>Quotation No:</strong> {q.quote_no}</p>
+              
               <p><strong>Date:</strong> {new Date(q.created_at).toLocaleDateString("en-GB")}</p>
               <p><strong>Email:</strong> info@multilogistics.co.in</p>
               <p><strong>Phone:</strong> +91 8411007077</p>

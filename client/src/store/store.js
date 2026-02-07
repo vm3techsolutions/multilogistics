@@ -9,6 +9,7 @@ import agentReducer from "./slices/agentSlice";
 import courierExportReducer from "./slices/courierExportSlice";
 import trackingReducer from "./slices/trackingSlice";
 import cargoQuotationReducer from "./slices/cargoQuotationSlice";
+import seaQuotationReducer from "@/store/slices/seaQuotationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -21,7 +22,7 @@ export const store = configureStore({
     agents: agentReducer,
     courierExports: courierExportReducer,
     tracking: trackingReducer,
-    // Cargo
     cargoQuotation: cargoQuotationReducer,
+    seaQuotation: seaQuotationReducer,
   },
 });
