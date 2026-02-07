@@ -4,6 +4,7 @@ import CreateQuotation from "./QuotationForm";
 import QuotationList from "./QuotationList";
 import CreateCargoQuote from "@/components/cargo/CreateCargoQuote";
 import CargoQuoteList from "@/components/cargo/CargoQuoteList";
+import SeaQuoteList from "@/components/sea/SeaQuoteList";
 import CreateSeaQuote from "@/components/sea/CreateSeaQuote";
 
 export default function QuotationPage() {
@@ -62,7 +63,7 @@ export default function QuotationPage() {
     {/* <option value="">All Types</option> */}
     <option value="courier">Courier</option>
     <option value="cargo">Cargo</option>
-    {/* <option value="sea">Sea</option> */}
+    <option value="sea">Sea</option>
   </select>
 
   {/* Status Dropdown */}
@@ -81,10 +82,15 @@ export default function QuotationPage() {
 
 
       {/* Quotation List */}
-      {formType === "" && (
+   {formType === "" && (
   <div className="bg-white rounded-xl p-5 mb-5 min-h-[300px]">
     {typeFilter === "cargo" ? (
       <CargoQuoteList
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+      />
+    ) : typeFilter === "sea" ? (
+      <SeaQuoteList
         searchQuery={searchQuery}
         statusFilter={statusFilter}
       />
@@ -97,7 +103,6 @@ export default function QuotationPage() {
     )}
   </div>
 )}
-
       {/* Action Buttons (Right aligned) */}
       <div className="flex justify-end gap-3 mb-5">
         <button
