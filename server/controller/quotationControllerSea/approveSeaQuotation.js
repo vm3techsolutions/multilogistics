@@ -1,5 +1,5 @@
 const pool = require('../../config/db');
-const { sendQuotationMail } = require('../../utils/sendQuotationMail');
+const { sendSeaQuotationMail } = require('../../utils/sendSeaQuotationMail');
 
 const sanitizeNumber = (value) => {
   if (value === "" || value === null || value === undefined) return null;
@@ -48,7 +48,7 @@ const triggerSeaQuotationEmail = async (req, res) => {
     if (!quotationId) return res.status(400).json({ success: false, message: 'Invalid sea quotation ID' });
 
     const { rows } = await client.query(
-      `SELECT q.id, q.quote_no, q.subject, q.pol, q.pod, q.incoterms, q.actual_weight, q.status, q.final_total, q.total_ocean_freight_currency,
+      `SELECT q.id, q.quote_no, q.subject, q.pol, q.pod, q.incoterms, q.actual_weight, q.status, q.final_total, q.total_ocean_freight_currency, q.total_ocean_freight_inr, q.currency, q.exchange_rate,
               c.id AS customer_id, c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone, c.address
        FROM sea_export_quotations q
        LEFT JOIN customers c ON q.customer_id = c.id
@@ -70,7 +70,7 @@ const triggerSeaQuotationEmail = async (req, res) => {
     const { rows: charges } = await client.query(`SELECT charge_name, type, amount, rate_per_kg, weight_kg, currency, exchange_rate, remarks FROM sea_export_quotation_charges WHERE quotation_id=$1`, [quotationId]);
     quotation.charges = charges;
 
-    await sendQuotationMail(quotation.customer_email, quotation);
+    await sendSeaQuotationMail(quotation.customer_email, quotation);
 
     await client.query(`UPDATE sea_export_quotations SET status = 'sent', status_updated_by = $1, status_updated_at = NOW(), updated_at = NOW() WHERE id = $2`, [adminId, quotationId]);
 
